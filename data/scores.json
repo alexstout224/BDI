@@ -1,7 +1,7 @@
 {
   "currentWeek": 1,
   "gamesInProgress": true,
-  "lastUpdated": "2026-09-13T23:36:05.370Z",
+  "lastUpdated": "2026-09-13T23:45:03.633Z",
   "leagues": [
     {
       "id": "1389692043155996674",
@@ -49,13 +49,13 @@
       "leagueIdx": 0,
       "name": "Dilliams44",
       "scores": [
-        128.06
+        128.56
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 128.06,
+      "cumulative": 128.56,
       "sleeperUrl": "https://sleeper.com/roster/1389692043155996674/3"
     },
     {
@@ -94,13 +94,13 @@
       "leagueIdx": 0,
       "name": "danodell",
       "scores": [
-        125.72
+        125.92
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 125.72,
+      "cumulative": 125.92,
       "sleeperUrl": "https://sleeper.com/roster/1389692043155996674/6"
     },
     {
@@ -184,13 +184,13 @@
       "leagueIdx": 0,
       "name": "tonymonster",
       "scores": [
-        110.8
+        112.48
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 110.8,
+      "cumulative": 112.48,
       "sleeperUrl": "https://sleeper.com/roster/1389692043155996674/12"
     },
     {
@@ -229,13 +229,13 @@
       "leagueIdx": 1,
       "name": "jsjoslin18",
       "scores": [
-        111.4
+        111.9
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 111.4,
+      "cumulative": 111.9,
       "sleeperUrl": "https://sleeper.com/roster/1401244219137376256/3"
     },
     {
@@ -319,13 +319,13 @@
       "leagueIdx": 1,
       "name": "calebterry",
       "scores": [
-        106.1
+        107.78
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 106.1,
+      "cumulative": 107.78,
       "sleeperUrl": "https://sleeper.com/roster/1401244219137376256/9"
     },
     {
@@ -364,13 +364,13 @@
       "leagueIdx": 1,
       "name": "Stout265",
       "scores": [
-        91.9
+        92.2
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 91.9,
+      "cumulative": 92.2,
       "sleeperUrl": "https://sleeper.com/roster/1401244219137376256/12"
     }
   ]
