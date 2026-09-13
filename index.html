@@ -202,7 +202,7 @@ section + section { border-top: none; }
 
 /* ---- live section ---- */
 .live-header {
-  display: flex; align-items: center; gap: 14px; margin-bottom: 10px; flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 .live-banner {
   display: inline-flex; align-items: center; gap: 8px;
@@ -210,6 +210,7 @@ section + section { border-top: none; }
   font-size: 11px; font-weight: bold; letter-spacing: .16em;
   padding: 5px 12px; border-radius: 2px;
 }
+.live-updated { font-size: 11px; color: var(--muted); opacity: .55; margin-top: 4px; }
 .live-dot {
   width: 7px; height: 7px; border-radius: 50%;
   background: #fff; animation: pulse 1.5s ease-in-out infinite;
@@ -653,7 +654,7 @@ function renderLive(data) {
     let html = `<div class="live-header"><div class="sec-head" style="margin-bottom:0"><h2>WEEK ${wk} RESULTS</h2></div>`;
     if (data.lastUpdated) {
       const d = new Date(data.lastUpdated);
-      html += `<div class="live-updated">Last updated ${d.toLocaleString("en-US",{timeZone:"America/New_York",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})} ET</div>`;
+      html += `<div class="live-updated">Last updated ${d.toLocaleString("en-US",{timeZone:"America/Chicago",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})} CT</div>`;
     }
     html += `</div>`;
     html += '<table class="live-table"><thead><tr>';
@@ -678,7 +679,7 @@ function renderLive(data) {
     let html = `<div class="live-header"><div class="live-banner"><span class="live-dot"></span>WEEK ${wk} IN PROGRESS</div>`;
     if (data.lastUpdated) {
       const d = new Date(data.lastUpdated);
-      html += `<div class="live-updated">Last updated ${d.toLocaleString("en-US",{timeZone:"America/New_York",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})} ET</div>`;
+      html += `<div class="live-updated">Last updated ${d.toLocaleString("en-US",{timeZone:"America/Chicago",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})} CT</div>`;
     }
     html += `</div>`;
     html += '<table class="live-table"><thead><tr>';
