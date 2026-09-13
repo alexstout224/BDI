@@ -2,8 +2,6 @@ name: Refresh Player Positions
 
 on:
   schedule:
-    # Weekly on Tuesday at 10am UTC (6am ET) — after rosters settle
-    - cron: '0 10 * * 2'
   workflow_dispatch:
 
 jobs:
