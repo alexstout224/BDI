@@ -1,8 +1,9 @@
 /**
- * Big Dam Invitational — Score Fetcher
+ * Big Dam Invitational — Score Fetcher v2
  * 
- * Pulls rosters, users, and matchups from the Sleeper API
- * and writes data/scores.json for the site to read.
+ * Computes optimal best ball lineups from individual player scores
+ * rather than relying on Sleeper's pre-computed points field,
+ * which can lag behind during live games.
  * 
  * No dependencies — uses only Node.js built-ins.
  * Run: node scripts/fetch-scores.js
@@ -13,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 // ============================================================
-// CONFIG — your league IDs go here
+// CONFIG
 // ============================================================
 const LEAGUES = [
   { id: '1389692043155996674', name: 'League 1' },
@@ -24,6 +25,9 @@ const NAME_OVERRIDES = {
   // 'sleeper_user_id': 'Preferred Display Name',
 };
 
+// Lineup slots: QB, RB, RB, WR, WR, WR, TE, FLEX(RB/WR/TE)
+const LINEUP = { QB: 1, RB: 2, WR: 3, TE: 1 };
+
 const OUT_PATH = path.join(__dirname, '..', 'data', 'scores.json');
 
 // ============================================================
@@ -33,7 +37,7 @@ const OUT_PATH = path.join(__dirname, '..', 'data', 'scores.json');
 function fetchJSON(urlStr) {
   return new Promise((resolve, reject) => {
     https.get(urlStr, {
-      headers: { 'User-Agent': 'BigDamInvitational/1.0' }
+      headers: { 'User-Agent': 'BigDamInvitational/2.0' }
     }, res => {
       if (res.statusCode !== 200) {
         reject(new Error(`HTTP ${res.statusCode} from ${urlStr}`));
@@ -55,32 +59,75 @@ function sleep(ms) {
 }
 
 // ============================================================
+// Optimal lineup solver
+// ============================================================
+
+function computeOptimalScore(playersPoints, playerPositions) {
+  if (!playersPoints || typeof playersPoints !== 'object') return 0;
+
+  // Group player scores by position
+  const byPos = { QB: [], RB: [], WR: [], TE: [] };
+
+  for (const [pid, pts] of Object.entries(playersPoints)) {
+    const score = pts || 0;
+    if (score <= 0) continue;
+    const pos = playerPositions[pid];
+    if (pos && byPos[pos]) {
+      byPos[pos].push(score);
+    }
+  }
+
+  // Sort each position descending
+  for (const pos in byPos) {
+    byPos[pos].sort((a, b) => b - a);
+  }
+
+  // Fill required slots
+  let total = 0;
+
+  // QB: top 1
+  for (let i = 0; i < LINEUP.QB; i++) total += byPos.QB[i] || 0;
+
+  // RB: top 2
+  for (let i = 0; i < LINEUP.RB; i++) total += byPos.RB[i] || 0;
+
+  // WR: top 3
+  for (let i = 0; i < LINEUP.WR; i++) total += byPos.WR[i] || 0;
+
+  // TE: top 1
+  for (let i = 0; i < LINEUP.TE; i++) total += byPos.TE[i] || 0;
+
+  // FLEX: best remaining RB/WR/TE after filling required slots
+  const flexCandidates = [];
+  if (byPos.RB[LINEUP.RB]) flexCandidates.push(byPos.RB[LINEUP.RB]);
+  if (byPos.WR[LINEUP.WR]) flexCandidates.push(byPos.WR[LINEUP.WR]);
+  if (byPos.TE[LINEUP.TE]) flexCandidates.push(byPos.TE[LINEUP.TE]);
+
+  if (flexCandidates.length > 0) {
+    total += Math.max(...flexCandidates);
+  }
+
+  return Math.round(total * 100) / 100;
+}
+
+// ============================================================
 // Game window detection
 // ============================================================
 
 function isGameWindow() {
   const now = new Date();
   const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  const day = et.getDay(); // 0=Sun 1=Mon 2=Tue 3=Wed 4=Thu
+  const day = et.getDay();
   const hour = et.getHours();
 
-  // Sunday 1pm through early Monday
   if (day === 0 && hour >= 13) return true;
   if (day === 1 && hour < 4) return true;
-
-  // Monday Night Football through early Tuesday
   if (day === 1 && hour >= 19) return true;
   if (day === 2 && hour < 4) return true;
-
-  // Wednesday opener (Week 1: Sep 9, 2026) through early Thursday
   if (day === 3 && hour >= 19) return true;
   if (day === 4 && hour < 4) return true;
-
-  // Thursday Night Football through early Friday
   if (day === 4 && hour >= 19) return true;
   if (day === 5 && hour < 4) return true;
-
-  // Saturday games (late season / playoffs)
   if (day === 6 && hour >= 13) return true;
 
   return false;
@@ -105,13 +152,11 @@ async function main() {
     return;
   }
 
-  // During preseason, write an empty file so the site shows empty states
   if (seasonType === 'pre') {
     console.log('Preseason — writing empty data');
     fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true });
     fs.writeFileSync(OUT_PATH, JSON.stringify({
-      currentWeek: 0,
-      gamesInProgress: false,
+      currentWeek: 0, gamesInProgress: false,
       lastUpdated: new Date().toISOString(),
       leagues: LEAGUES.map(l => ({ id: l.id, name: l.name })),
       teams: []
@@ -119,6 +164,17 @@ async function main() {
     return;
   }
 
+  // 2. Load player positions from cache
+  const posPath = path.join(__dirname, '..', 'data', 'player-positions.json');
+  if (!fs.existsSync(posPath)) {
+    console.error('ERROR: data/player-positions.json not found.');
+    console.error('Run the "Refresh Player Positions" workflow first.');
+    process.exit(1);
+  }
+  const playerPositions = JSON.parse(fs.readFileSync(posPath, 'utf8'));
+  console.log(`Loaded ${Object.keys(playerPositions).length} player positions from cache`);
+
+  // 3. Process each league
   const allTeams = [];
   const leaguesMeta = [];
 
@@ -126,7 +182,6 @@ async function main() {
     const league = LEAGUES[li];
     console.log(`\nLeague ${li + 1}: ${league.name} (${league.id})`);
 
-    // 2. Users (display names)
     const users = await fetchJSON(`https://api.sleeper.app/v1/league/${league.id}/users`);
     await sleep(200);
 
@@ -139,12 +194,10 @@ async function main() {
         || 'Unknown';
     });
 
-    // 3. Rosters (record + owner mapping)
     const rosters = await fetchJSON(`https://api.sleeper.app/v1/league/${league.id}/rosters`);
     await sleep(200);
 
-    // 4. Matchups for each week through current
-    const weeklyScores = {}; // rosterId -> [score, score, ...]
+    const weeklyScores = {};
 
     for (let w = 1; w <= currentWeek; w++) {
       const matchups = await fetchJSON(
@@ -154,15 +207,26 @@ async function main() {
 
       matchups.forEach(m => {
         if (!weeklyScores[m.roster_id]) weeklyScores[m.roster_id] = [];
-        // Pad with 0s if weeks were skipped
+
         while (weeklyScores[m.roster_id].length < w - 1) {
           weeklyScores[m.roster_id].push(0);
         }
-        weeklyScores[m.roster_id][w - 1] = m.points || 0;
+
+        // Compute optimal lineup from individual player scores
+        const computed = computeOptimalScore(m.players_points, playerPositions);
+
+        // Fall back to Sleeper's points if we computed 0 but they have a value
+        const score = computed > 0 ? computed : (m.points || 0);
+
+        weeklyScores[m.roster_id][w - 1] = score;
+
+        // Log roster 1 for sanity check
+        if (m.roster_id === 1 && w === currentWeek) {
+          console.log(`  Roster 1 wk${w}: computed=${computed} sleeper=${m.points}`);
+        }
       });
     }
 
-    // 5. Build team objects
     rosters.forEach(r => {
       const scores = weeklyScores[r.roster_id] || [];
       const cumulative = scores.reduce((sum, s) => sum + (s || 0), 0);
@@ -186,16 +250,16 @@ async function main() {
     console.log(`  ${rosters.length} rosters, ${currentWeek} weeks fetched`);
   }
 
-  // 6. Determine if games are in progress
+  // 4. Game state
   const hasCurrentWeekScores = allTeams.some(
     t => (t.scores[currentWeek - 1] || 0) > 0
   );
   const gamesInProgress = hasCurrentWeekScores && isGameWindow();
 
-  console.log(`\nGame window: ${isGameWindow()}, current week has scores: ${hasCurrentWeekScores}`);
+  console.log(`\nGame window: ${isGameWindow()}, scores exist: ${hasCurrentWeekScores}`);
   console.log(`gamesInProgress: ${gamesInProgress}`);
 
-  // 7. Write output
+  // 5. Write output
   const output = {
     currentWeek,
     gamesInProgress,
