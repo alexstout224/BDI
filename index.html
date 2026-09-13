@@ -38,14 +38,35 @@ body {
 .wrap { max-width: 960px; margin: 0 auto; padding: 0 20px; }
 
 /* ---- header ---- */
-header { padding: 32px 0 0; text-align: center; }
+header { padding: 20px 0 0; text-align: center; }
 header svg { width: 100%; max-width: 480px; height: auto; }
-.mobile-title {
-  display: none; font-size: 22px; font-weight: bold; letter-spacing: .10em;
-  color: var(--concrete); line-height: 1.2;
+
+/* ---- sticky bar (title + nav) ---- */
+.sticky-bar {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--ground-well);
+  border-bottom: 1px solid rgba(242,237,227,.12);
 }
-.mobile-title span { display: block; font-size: 12px; letter-spacing: .24em;
-  color: var(--gold); margin-top: 4px; font-weight: 600; }
+.sticky-title {
+  text-align: center; padding: 10px 0 0;
+}
+.sticky-title h1 {
+  font-size: 16px; font-weight: bold; letter-spacing: .12em;
+  color: var(--concrete); line-height: 1;
+}
+.sticky-title .sub {
+  font-size: 9px; font-weight: 600; letter-spacing: .22em;
+  color: var(--gold); margin-top: 3px;
+}
+.sticky-eyebrow {
+  display: flex; align-items: center; gap: 10px;
+  margin: 6px auto 0; max-width: 300px; padding: 0 20px;
+}
+.sticky-eyebrow .rule { flex: 1; height: 1px; background: var(--concrete); opacity: .18; }
+.sticky-eyebrow span {
+  font-size: 9px; font-weight: bold; letter-spacing: .24em;
+  color: var(--concrete); opacity: .45; white-space: nowrap; text-indent: .24em;
+}
 .live-updated { font-size: 11px; color: var(--muted); opacity: .55; margin-top: 6px; }
 .eyebrow {
   display: flex; align-items: center; gap: 14px;
@@ -57,25 +78,20 @@ header svg { width: 100%; max-width: 480px; height: auto; }
   color: var(--concrete); opacity: .55; white-space: nowrap; text-indent: .28em;
 }
 
-/* ---- nav ---- */
-nav {
-  position: sticky; top: 0; z-index: 100;
-  background: var(--ground-well); border-bottom: 1px solid rgba(242,237,227,.12);
-  margin-top: 20px;
-}
-nav .wrap {
+/* ---- nav (inside sticky bar) ---- */
+.sticky-bar nav {
   display: flex; gap: 0; overflow-x: auto; -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  scrollbar-width: none; justify-content: center;
 }
-nav .wrap::-webkit-scrollbar { display: none; }
-nav a {
-  flex-shrink: 0; padding: 14px 18px;
-  font-size: 13px; font-weight: bold; letter-spacing: .18em;
+.sticky-bar nav::-webkit-scrollbar { display: none; }
+.sticky-bar nav a {
+  flex-shrink: 0; padding: 10px 18px;
+  font-size: 12px; font-weight: bold; letter-spacing: .18em;
   color: var(--muted); text-decoration: none;
   border-bottom: 2px solid transparent;
   transition: color .15s, border-color .15s;
 }
-nav a:hover, nav a.active { color: var(--concrete); border-bottom-color: var(--gold); }
+.sticky-bar nav a:hover, .sticky-bar nav a.active { color: var(--concrete); border-bottom-color: var(--gold); }
 
 /* ---- sections ---- */
 section { padding: 32px 0; }
@@ -185,11 +201,14 @@ section + section { border-top: none; }
 }
 
 /* ---- live section ---- */
+.live-header {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 10px; flex-wrap: wrap;
+}
 .live-banner {
   display: inline-flex; align-items: center; gap: 8px;
   background: var(--red); color: #fff;
   font-size: 11px; font-weight: bold; letter-spacing: .16em;
-  padding: 5px 12px; border-radius: 2px; margin-bottom: 16px;
+  padding: 5px 12px; border-radius: 2px;
 }
 .live-dot {
   width: 7px; height: 7px; border-radius: 50%;
@@ -284,16 +303,15 @@ footer {
 
 /* ---- mobile tweaks ---- */
 @media (max-width: 640px) {
-  header { padding: 12px 0 0; }
-  header svg { max-width: 260px; }
-  .eyebrow { margin-top: 4px; }
-  .eyebrow span { font-size: 10px; }
+  header { padding: 10px 0 0; }
+  header svg { max-width: 240px; }
   .sec-head { flex-direction: column; gap: 4px; }
   .sec-head .sub { font-size: 12px; }
   .standings .col-name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
   .sort-btn { padding: 6px 10px; font-size: 11px; }
-  nav a { padding: 10px 14px; font-size: 12px; }
-  nav { margin-top: 8px; }
+  .sticky-bar nav a { padding: 8px 14px; font-size: 11px; }
+  .sticky-title { padding: 8px 0 0; }
+  .sticky-title h1 { font-size: 14px; }
   section { padding: 16px 0; }
   .foot-inner { flex-direction: column; align-items: flex-start; }
 }
@@ -309,8 +327,8 @@ footer {
 
 <header>
   <div class="wrap">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 355" role="img" aria-label="Big Dam Invitational">
-      <rect width="900" height="355" fill="#142334"/>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 240" role="img" aria-label="Big Dam Invitational">
+      <rect width="900" height="240" fill="#142334"/>
       <g transform="translate(60,4) scale(0.867)">
         <g fill="#2F5E85"><rect x="222.5" y="160" width="38" height="28"/><rect x="292" y="160" width="38" height="28"/><rect x="361.5" y="160" width="38" height="28"/><rect x="431" y="160" width="38" height="28"/><rect x="500.5" y="160" width="38" height="28"/><rect x="570" y="160" width="38" height="28"/><rect x="639.5" y="160" width="38" height="28"/></g>
         <g fill="#4A7CA6"><path d="M222.5 188 H260.5 L264 218.6 H219 Z"/><path d="M292 188 H330 L333.5 218.6 H288.5 Z"/><path d="M361.5 188 H399.5 L403 218.6 H358 Z"/><path d="M431 188 H469 L472.5 218.6 H427.5 Z"/><path d="M500.5 188 H538.5 L542 218.6 H497 Z"/><path d="M570 188 H608 L611.5 218.6 H566.5 Z"/><path d="M639.5 188 H677.5 L681 218.6 H636 Z"/></g>
@@ -327,53 +345,57 @@ footer {
         <g stroke="#7FA8C9" stroke-width="6" stroke-linecap="round"><path d="M216 220.6 H268"/><path d="M286 220.6 H338"/><path d="M355 220.6 H407"/><path d="M424 220.6 H476"/><path d="M494 220.6 H546"/><path d="M563 220.6 H615"/><path d="M633 220.6 H685"/></g>
         <g stroke="#3E6B94" stroke-width="5" stroke-linecap="round"><path d="M150 231.6 H340"/><path d="M372 231.6 H560"/><path d="M592 231.6 H740"/></g>
       </g>
-      <text x="90" y="297" textLength="720" lengthAdjust="spacing" fill="#F2EDE3" font-family="Helvetica Neue,Helvetica,Arial,sans-serif" font-weight="800" font-size="60">BIG DAM INVITATIONAL</text>
-      <text x="90" y="333" textLength="720" lengthAdjust="spacing" fill="#E0A83C" font-family="Helvetica Neue,Helvetica,Arial,sans-serif" font-weight="600" font-size="26">BEST BALL TOURNAMENT</text>
     </svg>
-    <div class="eyebrow">
-      <div class="rule"></div>
-      <span>HOSTED ON SLEEPER</span>
-      <div class="rule"></div>
-    </div>
   </div>
 </header>
 
-<nav>
-  <div class="wrap">
+<div class="sticky-bar">
+  <div class="sticky-title">
+    <h1>BIG DAM INVITATIONAL</h1>
+    <div class="sub">BEST BALL TOURNAMENT</div>
+  </div>
+  <div class="sticky-eyebrow">
+    <div class="rule"></div>
+    <span>HOSTED ON SLEEPER</span>
+    <div class="rule"></div>
+  </div>
+  <nav>
     <a href="#scores" class="active">SCORES</a>
+    <a href="#standings">STANDINGS</a>
     <a href="#playoffs">PLAYOFFS</a>
     <a href="#rules">RULES</a>
-  </div>
-</nav>
+  </nav>
+</div>
 
-<!-- SCORES & STANDINGS (one tab) -->
+<!-- SCORES -->
 <section id="scores">
   <div class="wrap">
-    <!-- This Week / Live -->
     <div id="live-content">
       <div class="empty">
         <p class="big">Season kicks off September 9</p>
         <p>Live scores appear here during game windows.</p>
       </div>
     </div>
+  </div>
+</section>
 
-    <!-- Standings -->
-    <div id="standings-block" style="margin-top:36px">
-      <div class="sec-head">
-        <h2>STANDINGS</h2>
-        <div class="sub" id="standings-sub"></div>
+<!-- STANDINGS -->
+<section id="standings">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>STANDINGS</h2>
+      <div class="sub" id="standings-sub"></div>
+    </div>
+    <div id="standings-controls" style="display:none">
+      <div class="sort-bar">
+        <button class="sort-btn active" data-sort="cumulative">TOTAL POINTS</button>
+        <button class="sort-btn" data-sort="record">RECORD</button>
       </div>
-      <div id="standings-controls" style="display:none">
-        <div class="sort-bar">
-          <button class="sort-btn active" data-sort="cumulative">TOTAL POINTS</button>
-          <button class="sort-btn" data-sort="record">RECORD</button>
-        </div>
-      </div>
-      <div id="standings-content">
-        <div class="empty">
-          <p class="big">Standings populate after Week 1</p>
-          <p>Every team across all leagues, ranked by total points scored.</p>
-        </div>
+    </div>
+    <div id="standings-content">
+      <div class="empty">
+        <p class="big">Standings populate after Week 1</p>
+        <p>Every team across all leagues, ranked by total points scored.</p>
       </div>
     </div>
   </div>
@@ -628,11 +650,12 @@ function renderLive(data) {
     const teams = [...data.teams].sort((a,b) =>
       (b.scores[wk-1] || 0) - (a.scores[wk-1] || 0));
 
-    let html = `<div class="sec-head"><h2>WEEK ${wk} RESULTS</h2></div>`;
+    let html = `<div class="live-header"><div class="sec-head" style="margin-bottom:0"><h2>WEEK ${wk} RESULTS</h2></div>`;
     if (data.lastUpdated) {
       const d = new Date(data.lastUpdated);
-      html += `<div class="live-updated">Updated ${d.toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</div>`;
+      html += `<div class="live-updated">Last updated ${d.toLocaleString("en-US",{timeZone:"America/New_York",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})} ET</div>`;
     }
+    html += `</div>`;
     html += '<table class="live-table"><thead><tr>';
     html += '<th class="col-rank">#</th><th>TEAM</th><th style="text-align:right">PTS</th>';
     html += '</tr></thead><tbody>';
@@ -652,11 +675,12 @@ function renderLive(data) {
     const teams = [...data.teams].sort((a,b) =>
       (b.scores[wk-1] || 0) - (a.scores[wk-1] || 0));
 
-    let html = `<div class="live-banner"><span class="live-dot"></span>WEEK ${wk} IN PROGRESS</div>`;
+    let html = `<div class="live-header"><div class="live-banner"><span class="live-dot"></span>WEEK ${wk} IN PROGRESS</div>`;
     if (data.lastUpdated) {
       const d = new Date(data.lastUpdated);
-      html += `<div class="live-updated">Updated ${d.toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</div>`;
+      html += `<div class="live-updated">Last updated ${d.toLocaleString("en-US",{timeZone:"America/New_York",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})} ET</div>`;
     }
+    html += `</div>`;
     html += '<table class="live-table"><thead><tr>';
     html += '<th class="col-rank">#</th><th>TEAM</th><th style="text-align:right">PTS</th>';
     html += '</tr></thead><tbody>';
