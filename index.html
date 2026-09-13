@@ -40,6 +40,13 @@ body {
 /* ---- header ---- */
 header { padding: 32px 0 0; text-align: center; }
 header svg { width: 100%; max-width: 480px; height: auto; }
+.mobile-title {
+  display: none; font-size: 22px; font-weight: bold; letter-spacing: .10em;
+  color: var(--concrete); line-height: 1.2;
+}
+.mobile-title span { display: block; font-size: 12px; letter-spacing: .24em;
+  color: var(--gold); margin-top: 4px; font-weight: 600; }
+.live-updated { font-size: 11px; color: var(--muted); opacity: .55; margin-top: 6px; }
 .eyebrow {
   display: flex; align-items: center; gap: 14px;
   margin: 12px auto 0; max-width: 480px;
@@ -151,19 +158,19 @@ section + section { border-top: none; }
 .standings .col-rank { color: var(--muted); font-size: 13px; }
 .standings .team-link {
   color: var(--concrete); text-decoration: none;
-  border-bottom: 1px solid transparent;
+  border-bottom: 1px solid rgba(242,237,227,.25);
   transition: border-color .15s;
 }
 .standings .team-link:hover { border-bottom-color: var(--gold); }
 
-.standings .league-badge {
-  display: inline-block; font-size: 10px; font-weight: bold;
-  letter-spacing: .08em; padding: 2px 6px; border-radius: 2px;
-  margin-left: 8px; vertical-align: middle;
+.league-badge {
+  display: inline-block; font-size: 9px; font-weight: bold;
+  letter-spacing: .06em; padding: 2px 5px; border-radius: 2px;
+  margin-left: 6px; vertical-align: middle;
 }
-.standings .league-0 { background: var(--spill-in); color: var(--concrete); }
-.standings .league-1 { background: rgba(224,168,60,.35); color: var(--gold); }
-.standings .league-2 { background: rgba(110,156,194,.30); color: var(--streak); }
+.league-0 { background: var(--spill-in); color: var(--concrete); }
+.league-1 { background: rgba(224,168,60,.35); color: var(--gold); }
+.league-2 { background: rgba(110,156,194,.30); color: var(--streak); }
 
 .standings .col-pts { font-weight: bold; }
 .standings .col-record { color: var(--muted); font-size: 13px; }
@@ -192,8 +199,8 @@ section + section { border-top: none; }
 
 .live-table { width: 100%; border-collapse: collapse; }
 .live-table th, .live-table td {
-  padding: 10px 12px; text-align: left;
-  font-size: 14px; border-bottom: 1px solid rgba(242,237,227,.10);
+  padding: 5px 10px; text-align: left;
+  font-size: 13px; border-bottom: 1px solid rgba(242,237,227,.08);
 }
 .live-table th {
   font-size: 11px; font-weight: bold; letter-spacing: .14em;
@@ -201,8 +208,9 @@ section + section { border-top: none; }
 }
 .live-table .col-rank { width: 42px; text-align: center; color: var(--muted); }
 .live-table .col-pts { text-align: right; font-weight: bold; font-size: 16px; }
-.live-table .team-link { color: var(--concrete); text-decoration: none; font-weight: bold; }
-.live-table .team-link:hover { text-decoration: underline; text-decoration-color: var(--gold); }
+.live-table .team-link { color: var(--concrete); text-decoration: none; font-weight: bold;
+  border-bottom: 1px solid rgba(242,237,227,.25); }
+.live-table .team-link:hover { border-bottom-color: var(--gold); }
 .live-table .league-badge { margin-left: 8px; }
 .live-table tbody tr:hover td { background: var(--ground-up); }
 
@@ -276,12 +284,17 @@ footer {
 
 /* ---- mobile tweaks ---- */
 @media (max-width: 640px) {
-  header svg { max-width: 320px; }
+  header { padding: 16px 0 0; }
+  header svg { display: none; }
+  .mobile-title { display: block; }
+  .eyebrow { margin-top: 6px; }
   .sec-head { flex-direction: column; gap: 4px; }
   .sec-head .sub { font-size: 12px; }
   .standings .col-name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
   .sort-btn { padding: 6px 10px; font-size: 11px; }
-  nav a { padding: 12px 14px; font-size: 12px; }
+  nav a { padding: 10px 14px; font-size: 12px; }
+  nav { margin-top: 10px; }
+  section { padding: 20px 0; }
   .foot-inner { flex-direction: column; align-items: flex-start; }
 }
 
@@ -317,6 +330,7 @@ footer {
       <text x="90" y="297" textLength="720" lengthAdjust="spacing" fill="#F2EDE3" font-family="Helvetica Neue,Helvetica,Arial,sans-serif" font-weight="800" font-size="60">BIG DAM INVITATIONAL</text>
       <text x="90" y="333" textLength="720" lengthAdjust="spacing" fill="#E0A83C" font-family="Helvetica Neue,Helvetica,Arial,sans-serif" font-weight="600" font-size="26">BEST BALL TOURNAMENT</text>
     </svg>
+    <div class="mobile-title">BIG DAM INVITATIONAL<span>BEST BALL TOURNAMENT</span></div>
     <div class="eyebrow">
       <div class="rule"></div>
       <span>HOSTED ON SLEEPER</span>
@@ -393,6 +407,7 @@ footer {
         <li><b>$25 per entry,</b> paid before your draft starts. Venmo, CashApp, PayPal, or Zelle to Alex Stout.</li>
         <li>Twelve teams to a league. Leagues fill in the order people pay, and a new league opens only once the one before it is full.</li>
         <li>If a league cannot reach twelve by the deadline, everyone in it is refunded in full.</li>
+        <li>You may enter more than once, but not twice in the same league.</li>
       </ul>
     </div>
 
@@ -400,7 +415,7 @@ footer {
       <h3><span class="num">02</span>THE DRAFT</h3>
       <ul>
         <li>Twenty rounds, snake order, randomized by Sleeper in front of the league.</li>
-        <li>Slow draft with an <b>eight hour clock that stops overnight</b> from 11pm to 8am. A live fast draft replaces it only if every manager in that league can make the same window.</li>
+        <li>Slow draft in late August on an <b>eight hour clock that stops overnight</b> from 11pm to 8am. A live fast draft replaces it only if every manager in that league can make the same window.</li>
         <li>Run out of clock and Sleeper picks from your queue, so keep one stocked.</li>
         <li><b>Every league drafts before kickoff on Wednesday, September 9.</b></li>
       </ul>
@@ -577,7 +592,7 @@ function renderStandings(data) {
       html += `<td class="col-rank">${i+1}</td>`;
       html += `<td class="col-name">`;
       html += `<a class="team-link" href="${t.sleeperUrl}" target="_blank" rel="noopener">${t.name}</a>`;
-      html += `<span class="league-badge ${CONFIG.leagueColors[t.leagueIdx] || "league-0"}">${data.leagues[t.leagueIdx]?.name || ""}</span>`;
+      html += `<span class="league-badge ${CONFIG.leagueColors[t.leagueIdx] || "league-0"}">L${t.leagueIdx+1}</span>`;
       html += `</td>`;
       html += `<td class="col-pts">${t.cumulative.toFixed(1)}</td>`;
       html += `<td class="col-record">${t.record.wins}\u2013${t.record.losses}</td>`;
@@ -615,6 +630,10 @@ function renderLive(data) {
       (b.scores[wk-1] || 0) - (a.scores[wk-1] || 0));
 
     let html = `<div class="sec-head"><h2>WEEK ${wk} RESULTS</h2></div>`;
+    if (data.lastUpdated) {
+      const d = new Date(data.lastUpdated);
+      html += `<div class="live-updated">Updated ${d.toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</div>`;
+    }
     html += '<table class="live-table"><thead><tr>';
     html += '<th class="col-rank">#</th><th>TEAM</th><th style="text-align:right">PTS</th>';
     html += '</tr></thead><tbody>';
@@ -622,7 +641,7 @@ function renderLive(data) {
       const pts = (t.scores[wk-1] || 0).toFixed(1);
       html += `<tr><td class="col-rank">${i+1}</td>`;
       html += `<td><a class="team-link" href="${t.sleeperUrl}" target="_blank" rel="noopener">${t.name}</a>`;
-      html += ` <span class="league-badge ${CONFIG.leagueColors[t.leagueIdx]||"league-0"}">${data.leagues[t.leagueIdx]?.name||""}</span></td>`;
+      html += ` <span class="league-badge ${CONFIG.leagueColors[t.leagueIdx]||"league-0"}">L${t.leagueIdx+1}</span></td>`;
       html += `<td class="col-pts">${pts}</td></tr>`;
     });
     html += '</tbody></table>';
@@ -635,6 +654,10 @@ function renderLive(data) {
       (b.scores[wk-1] || 0) - (a.scores[wk-1] || 0));
 
     let html = `<div class="live-banner"><span class="live-dot"></span>WEEK ${wk} IN PROGRESS</div>`;
+    if (data.lastUpdated) {
+      const d = new Date(data.lastUpdated);
+      html += `<div class="live-updated">Updated ${d.toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</div>`;
+    }
     html += '<table class="live-table"><thead><tr>';
     html += '<th class="col-rank">#</th><th>TEAM</th><th style="text-align:right">PTS</th>';
     html += '</tr></thead><tbody>';
@@ -642,7 +665,7 @@ function renderLive(data) {
       const pts = (t.scores[wk-1] || 0).toFixed(1);
       html += `<tr><td class="col-rank">${i+1}</td>`;
       html += `<td><a class="team-link" href="${t.sleeperUrl}" target="_blank" rel="noopener">${t.name}</a>`;
-      html += ` <span class="league-badge ${CONFIG.leagueColors[t.leagueIdx]||"league-0"}">${data.leagues[t.leagueIdx]?.name||""}</span></td>`;
+      html += ` <span class="league-badge ${CONFIG.leagueColors[t.leagueIdx]||"league-0"}">L${t.leagueIdx+1}</span></td>`;
       html += `<td class="col-pts">${pts}</td></tr>`;
     });
     html += '</tbody></table>';
