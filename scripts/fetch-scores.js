@@ -16,8 +16,8 @@ const path = require('path');
 // CONFIG — your league IDs go here
 // ============================================================
 const LEAGUES = [
-  { id: '1401244219137376256', name: 'League 1' },
-  { id: '1389692043155996674', name: 'League 2' },
+  { id: '1389692043155996674', name: 'League 1' },
+  { id: '1401244219137376256', name: 'League 2' },
 ];
 
 const NAME_OVERRIDES = {
