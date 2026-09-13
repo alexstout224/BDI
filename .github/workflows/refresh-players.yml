@@ -1,0 +1,37 @@
+name: Refresh Player Positions
+
+on:
+  schedule:
+    # Weekly on Tuesday at 10am UTC (6am ET) — after rosters settle
+    - cron: '0 10 * * 2'
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch and cache player positions
+        run: node scripts/refresh-players.js
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/player-positions.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Refresh player positions $(date -u +'%b %d')"
+            git push
+          fi
