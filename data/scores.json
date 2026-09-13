@@ -1,7 +1,7 @@
 {
   "currentWeek": 1,
   "gamesInProgress": true,
-  "lastUpdated": "2026-09-13T21:06:57.039Z",
+  "lastUpdated": "2026-09-13T21:20:21.475Z",
   "leagues": [
     {
       "id": "1389692043155996674",
@@ -19,13 +19,13 @@
       "leagueIdx": 0,
       "name": "Gonedge",
       "scores": [
-        61.98
+        63.18
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 61.98,
+      "cumulative": 63.18,
       "sleeperUrl": "https://sleeper.com/roster/1389692043155996674/1"
     },
     {
@@ -34,13 +34,13 @@
       "leagueIdx": 0,
       "name": "troytan",
       "scores": [
-        121.64
+        124.14
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 121.64,
+      "cumulative": 124.14,
       "sleeperUrl": "https://sleeper.com/roster/1389692043155996674/2"
     },
     {
@@ -124,13 +124,13 @@
       "leagueIdx": 0,
       "name": "ptomp",
       "scores": [
-        39.32
+        40.02
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 39.32,
+      "cumulative": 40.02,
       "sleeperUrl": "https://sleeper.com/roster/1389692043155996674/8"
     },
     {
@@ -169,13 +169,13 @@
       "leagueIdx": 0,
       "name": "calebjbauer",
       "scores": [
-        89.14
+        91.9
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 89.14,
+      "cumulative": 91.9,
       "sleeperUrl": "https://sleeper.com/roster/1389692043155996674/11"
     },
     {
@@ -184,13 +184,13 @@
       "leagueIdx": 0,
       "name": "tonymonster",
       "scores": [
-        92.44
+        93.54
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 92.44,
+      "cumulative": 93.54,
       "sleeperUrl": "https://sleeper.com/roster/1389692043155996674/12"
     },
     {
@@ -214,13 +214,13 @@
       "leagueIdx": 1,
       "name": "Justintime85",
       "scores": [
-        110.44
+        110.34
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 110.44,
+      "cumulative": 110.34,
       "sleeperUrl": "https://sleeper.com/roster/1401244219137376256/2"
     },
     {
@@ -229,13 +229,13 @@
       "leagueIdx": 1,
       "name": "jsjoslin18",
       "scores": [
-        100.74
+        102.9
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 100.74,
+      "cumulative": 102.9,
       "sleeperUrl": "https://sleeper.com/roster/1401244219137376256/3"
     },
     {
@@ -244,13 +244,13 @@
       "leagueIdx": 1,
       "name": "nnjrh",
       "scores": [
-        114.06
+        114.26
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 114.06,
+      "cumulative": 114.26,
       "sleeperUrl": "https://sleeper.com/roster/1401244219137376256/4"
     },
     {
@@ -334,13 +334,13 @@
       "leagueIdx": 1,
       "name": "Jumb0Sm00th",
       "scores": [
-        81.66
+        84.26
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 81.66,
+      "cumulative": 84.26,
       "sleeperUrl": "https://sleeper.com/roster/1401244219137376256/10"
     },
     {
@@ -349,13 +349,13 @@
       "leagueIdx": 1,
       "name": "mbrashear",
       "scores": [
-        85.16
+        86.26
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 85.16,
+      "cumulative": 86.26,
       "sleeperUrl": "https://sleeper.com/roster/1401244219137376256/11"
     },
     {
@@ -364,13 +364,13 @@
       "leagueIdx": 1,
       "name": "Stout265",
       "scores": [
-        70.6
+        71.7
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 70.6,
+      "cumulative": 71.7,
       "sleeperUrl": "https://sleeper.com/roster/1401244219137376256/12"
     }
   ]
