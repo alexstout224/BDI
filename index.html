@@ -281,6 +281,85 @@ section + section { border-top: none; }
 }
 .rules-section li b { color: var(--gold); font-weight: bold; }
 
+/* ---- roster modal ---- */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(15,27,41,.92); backdrop-filter: blur(4px);
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+.modal-overlay.open { display: flex; justify-content: center; align-items: flex-start; }
+.modal-card {
+  width: 100%; max-width: 440px; background: var(--ground);
+  margin: 20px auto; border-radius: 10px; overflow: hidden;
+  border: 1px solid rgba(242,237,227,.10);
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px; background: var(--ground-well);
+  border-bottom: 1px solid rgba(242,237,227,.10);
+}
+.modal-header .label { font-size: 10px; font-weight: bold; letter-spacing:.12em; color: var(--muted); }
+.modal-close {
+  width: 26px; height: 26px; border-radius: 50%; border: 1px solid rgba(242,237,227,.2);
+  background: transparent; color: var(--muted); font-size: 14px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.modal-close:hover { border-color: var(--concrete); color: var(--concrete); }
+.modal-team {
+  padding: 8px 14px 4px; display: flex; align-items: baseline; justify-content: space-between;
+}
+.modal-team h3 { font-size: 16px; font-weight: bold; color: var(--concrete); }
+.modal-team .total { font-size: 22px; font-weight: bold; color: var(--gold); }
+.modal-team .total span { font-size: 11px; color: var(--muted); margin-left: 4px; }
+
+.roster-section-label {
+  font-size: 8px; font-weight: bold; letter-spacing: .16em;
+  padding: 6px 14px 2px;
+}
+.roster-section-label.starters { color: var(--gold); }
+.roster-section-label.bench { color: var(--gold); }
+
+.roster-row {
+  display: flex; align-items: center; padding: 3px 14px;
+  border-bottom: 1px solid rgba(242,237,227,.05);
+}
+.roster-row.starter { }
+.roster-row.bench-row { opacity: .45; }
+.roster-row .pos-tag {
+  width: 26px; font-size: 9px; font-weight: bold; flex-shrink: 0;
+}
+.roster-row .player-info {
+  flex: 1; display: flex; align-items: baseline; gap: 5px; min-width: 0;
+}
+.roster-row .player-name { font-size: 12px; font-weight: bold; white-space: nowrap; }
+.roster-row.bench-row .player-name { font-weight: normal; font-size: 11px; }
+.roster-row .player-meta { font-size: 9px; color: var(--muted); white-space: nowrap; }
+.roster-row.bench-row .player-meta { font-size: 8px; }
+.roster-row .player-pts {
+  font-size: 13px; font-weight: bold; min-width: 36px; text-align: right; flex-shrink: 0;
+}
+.roster-row.bench-row .player-pts { font-size: 11px; font-weight: normal; }
+
+/* position colors */
+.pos-qb { color: #c0544e; }
+.pos-rb { color: #2DA078; }
+.pos-wr { color: #4A7CA6; }
+.pos-te { color: #E0A83C; }
+.pos-flx { color: #C3B7A0; }
+.row-qb.starter { background: rgba(192,84,78,.08); }
+.row-rb.starter { background: rgba(45,160,120,.08); }
+.row-wr.starter { background: rgba(74,124,166,.08); }
+.row-te.starter { background: rgba(224,168,60,.07); }
+.row-flx.starter { background: rgba(195,183,160,.06); }
+
+/* clickable scores in standings */
+.standings .col-week.clickable { cursor: pointer; }
+.standings .col-week.clickable:hover { color: var(--gold); }
+
+@media (max-width: 640px) {
+  .modal-card { margin: 0; border-radius: 0; min-height: 100dvh; border: none; }
+}
+
 /* ---- footer ---- */
 footer {
   margin-top: 12px; padding: 20px 0;
@@ -294,10 +373,6 @@ footer {
   font-size: 14px; color: var(--muted); line-height: 1.4;
 }
 .foot-inner .who strong { color: var(--concrete); }
-.foot-inner .pay {
-  font-size: 11px; font-weight: bold; letter-spacing: .16em;
-  color: var(--muted); text-align: right; line-height: 1.6;
-}
 .last-updated {
   margin-top: 12px; font-size: 11px; color: var(--muted); opacity: .5;
 }
@@ -485,6 +560,11 @@ footer {
   </div>
 </section>
 
+<!-- ROSTER MODAL -->
+<div class="modal-overlay" id="roster-modal">
+  <div class="modal-card" id="roster-card"></div>
+</div>
+
 <footer>
   <div class="wrap">
     <div class="foot-inner">
@@ -492,7 +572,6 @@ footer {
         <strong>Alex Stout</strong><br>
         870&#8209;273&#8209;4893
       </div>
-      <div class="pay">VENMO<br>CASHAPP<br>PAYPAL<br>ZELLE</div>
     </div>
     <div class="last-updated" id="last-updated"></div>
   </div>
@@ -544,6 +623,7 @@ const CONFIG = {
 
   if (!data || !data.teams || data.teams.length === 0) return;
 
+  _appData = data;
   renderStandings(data);
   renderLive(data);
 
@@ -613,7 +693,7 @@ function renderStandings(data) {
       html += `<tr class="${cls}">`;
       html += `<td class="col-rank">${i+1}</td>`;
       html += `<td class="col-name">`;
-      html += `<a class="team-link" href="${t.sleeperUrl}" target="_blank" rel="noopener">${t.name}</a>`;
+      html += `<span class="team-link" style="cursor:pointer" onclick="openRoster('${t.leagueId}',${t.rosterId},${completedWeeks-1})">${t.name}</span>`;
       html += `<span class="league-badge ${CONFIG.leagueColors[t.leagueIdx] || "league-0"}">L${t.leagueIdx+1}</span>`;
       html += `</td>`;
       html += `<td class="col-pts">${t.cumulative.toFixed(1)}</td>`;
@@ -621,7 +701,7 @@ function renderStandings(data) {
       for (let w = 0; w < completedWeeks; w++) {
         const score = t.scores[w] || 0;
         const isHigh = score === weekHighs[w] && score > 0;
-        html += `<td class="col-week${isHigh ? " week-high" : ""}">${score.toFixed(1)}</td>`;
+        html += `<td class="col-week clickable${isHigh ? " week-high" : ""}" onclick="openRoster('${t.leagueId}',${t.rosterId},${w})">${score.toFixed(1)}</td>`;
       }
       html += '</tr>';
     });
@@ -644,7 +724,6 @@ function renderStandings(data) {
 /* ---- live ---- */
 function renderLive(data) {
   if (!data.gamesInProgress) {
-    // show most recent completed week as "latest results"
     const wk = data.currentWeek || 0;
     if (wk < 1) return;
 
@@ -662,8 +741,8 @@ function renderLive(data) {
     html += '</tr></thead><tbody>';
     teams.forEach((t, i) => {
       const pts = (t.scores[wk-1] || 0).toFixed(1);
-      html += `<tr><td class="col-rank">${i+1}</td>`;
-      html += `<td><a class="team-link" href="${t.sleeperUrl}" target="_blank" rel="noopener">${t.name}</a>`;
+      html += `<tr style="cursor:pointer" onclick="openRoster('${t.leagueId}',${t.rosterId},${wk-1})"><td class="col-rank">${i+1}</td>`;
+      html += `<td><span class="team-link">${t.name}</span>`;
       html += ` <span class="league-badge ${CONFIG.leagueColors[t.leagueIdx]||"league-0"}">L${t.leagueIdx+1}</span></td>`;
       html += `<td class="col-pts">${pts}</td></tr>`;
     });
@@ -671,7 +750,6 @@ function renderLive(data) {
     document.getElementById("live-content").innerHTML = html;
 
   } else {
-    // live: show current week partial scores
     const wk = data.currentWeek;
     const teams = [...data.teams].sort((a,b) =>
       (b.scores[wk-1] || 0) - (a.scores[wk-1] || 0));
@@ -687,8 +765,8 @@ function renderLive(data) {
     html += '</tr></thead><tbody>';
     teams.forEach((t, i) => {
       const pts = (t.scores[wk-1] || 0).toFixed(1);
-      html += `<tr><td class="col-rank">${i+1}</td>`;
-      html += `<td><a class="team-link" href="${t.sleeperUrl}" target="_blank" rel="noopener">${t.name}</a>`;
+      html += `<tr style="cursor:pointer" onclick="openRoster('${t.leagueId}',${t.rosterId},${wk-1})"><td class="col-rank">${i+1}</td>`;
+      html += `<td><span class="team-link">${t.name}</span>`;
       html += ` <span class="league-badge ${CONFIG.leagueColors[t.leagueIdx]||"league-0"}">L${t.leagueIdx+1}</span></td>`;
       html += `<td class="col-pts">${pts}</td></tr>`;
     });
@@ -696,6 +774,91 @@ function renderLive(data) {
     document.getElementById("live-content").innerHTML = html;
   }
 }
+
+/* ---- roster modal ---- */
+let _appData = null;
+
+function openRoster(leagueId, rosterId, weekIdx) {
+  if (!_appData) return;
+  const team = _appData.teams.find(t => t.leagueId === leagueId && t.rosterId === rosterId);
+  if (!team || !team.rosters || !team.rosters[weekIdx]) return;
+
+  const roster = team.rosters[weekIdx];
+  const week = weekIdx + 1;
+  const leagueIdx = team.leagueIdx;
+  const score = team.scores[weekIdx] || 0;
+
+  const posColorClass = p => {
+    if (p === 'FLX') return 'pos-flx';
+    return `pos-${p.toLowerCase()}`;
+  };
+  const rowColorClass = (p, isStarter) => {
+    if (!isStarter) return '';
+    const slot = p === 'FLX' ? 'flx' : p.toLowerCase();
+    return `row-${slot}`;
+  };
+
+  let html = '';
+  html += `<div class="modal-header">`;
+  html += `<div style="display:flex;align-items:center;gap:8px">`;
+  html += `<span class="label">WEEK ${week}</span>`;
+  html += `<span class="league-badge ${CONFIG.leagueColors[leagueIdx]||"league-0"}">L${leagueIdx+1}</span>`;
+  html += `</div>`;
+  html += `<button class="modal-close" onclick="closeRoster()">&times;</button>`;
+  html += `</div>`;
+
+  html += `<div class="modal-team">`;
+  html += `<h3>${team.name}</h3>`;
+  html += `<div class="total">${score.toFixed(1)}<span>pts</span></div>`;
+  html += `</div>`;
+
+  // Starters
+  const starters = roster.filter(r => r.s);
+  const bench = roster.filter(r => !r.s);
+
+  html += `<div class="roster-section-label starters">STARTERS</div>`;
+  starters.forEach(pl => {
+    const slot = pl.sl || pl.p;
+    html += `<div class="roster-row starter ${rowColorClass(slot, true)}">`;
+    html += `<div class="pos-tag ${posColorClass(slot)}">${slot}</div>`;
+    html += `<div class="player-info">`;
+    html += `<span class="player-name">${pl.n}</span>`;
+    html += `<span class="player-meta">${pl.t}</span>`;
+    html += `</div>`;
+    html += `<div class="player-pts">${pl.pts.toFixed(1)}</div>`;
+    html += `</div>`;
+  });
+
+  // Bench
+  html += `<div class="roster-section-label bench">BENCH</div>`;
+  bench.forEach(pl => {
+    html += `<div class="roster-row bench-row">`;
+    html += `<div class="pos-tag ${posColorClass(pl.p)}">${pl.p}</div>`;
+    html += `<div class="player-info">`;
+    html += `<span class="player-name">${pl.n}</span>`;
+    html += `<span class="player-meta">${pl.t}</span>`;
+    html += `</div>`;
+    html += `<div class="player-pts">${pl.pts.toFixed(1)}</div>`;
+    html += `</div>`;
+  });
+
+  document.getElementById("roster-card").innerHTML = html;
+  document.getElementById("roster-modal").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeRoster() {
+  document.getElementById("roster-modal").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+// Close on overlay click (not card click)
+document.getElementById("roster-modal").addEventListener("click", e => {
+  if (e.target === e.currentTarget) closeRoster();
+});
+
+// Close on escape
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeRoster(); });
 </script>
 
 </body>
