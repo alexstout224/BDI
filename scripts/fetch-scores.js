@@ -1,4 +1,3 @@
-
 /**
  * Big Dam Invitational — Score Fetcher v3
  * 
@@ -73,8 +72,10 @@ function computeOptimalLineup(playersPoints, playerCache) {
   let score = 0;
   const roster = [];
 
-  // Starters first, sorted by score desc
-  const starterList = players.filter(p => starters.has(p.pid)).sort((a, b) => b.pts - a.pts);
+  // Starters sorted by slot order (QB, RB, RB, WR, WR, WR, TE, FLX), then score within position
+  const slotOrder = { QB: 0, RB: 1, WR: 2, TE: 3, FLX: 4 };
+  const starterList = players.filter(p => starters.has(p.pid))
+    .sort((a, b) => (slotOrder[slots[a.pid]] ?? 9) - (slotOrder[slots[b.pid]] ?? 9) || b.pts - a.pts);
   for (const p of starterList) {
     score += p.pts;
     roster.push({ n: p.name, p: p.pos, t: p.team, pts: p.pts, s: true, sl: slots[p.pid] });
