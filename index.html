@@ -281,6 +281,19 @@ section + section { border-top: none; }
 }
 .rules-section li b { color: var(--gold); font-weight: bold; }
 
+/* ---- league filter ---- */
+.league-filter {
+  display: inline-flex; gap: 4px; margin-left: 12px; vertical-align: middle;
+}
+.league-filter button {
+  font-family: inherit; font-size: 9px; font-weight: bold;
+  letter-spacing: .08em; padding: 2px 8px; border-radius: 2px;
+  border: 1px solid rgba(242,237,227,.18); background: transparent;
+  color: var(--muted); cursor: pointer; transition: all .15s;
+}
+.league-filter button:hover { border-color: var(--concrete); color: var(--concrete); }
+.league-filter button.active { background: var(--gold); color: var(--ground); border-color: var(--gold); }
+
 /* ---- roster modal ---- */
 .modal-overlay {
   display: none; position: fixed; inset: 0; z-index: 200;
@@ -638,8 +651,12 @@ const CONFIG = {
 })();
 
 /* ---- standings ---- */
+let standingsFilter = 'all';
+
+function setStandingsFilter(f) { standingsFilter = f; if (_appData) renderStandings(_appData); }
+
 function renderStandings(data) {
-  const teams = [...data.teams];
+  const allTeams = [...data.teams];
   const weeks = data.currentWeek || 0;
   const completedWeeks = data.gamesInProgress ? weeks - 1 : weeks;
 
@@ -649,11 +666,13 @@ function renderStandings(data) {
     "THROUGH WEEK " + completedWeeks;
   document.getElementById("standings-controls").style.display = "";
 
-  // find week highs for gold highlights
+  const filtered = standingsFilter === 'all' ? allTeams : allTeams.filter(t => String(t.leagueIdx) === standingsFilter);
+
+  // find week highs across ALL teams (not just filtered) for gold highlights
   const weekHighs = [];
   for (let w = 0; w < completedWeeks; w++) {
     let high = 0;
-    teams.forEach(t => { if (t.scores[w] > high) high = t.scores[w]; });
+    allTeams.forEach(t => { if (t.scores[w] > high) high = t.scores[w]; });
     weekHighs.push(high);
   }
 
@@ -667,7 +686,7 @@ function renderStandings(data) {
   }));
 
   function draw() {
-    const sorted = [...teams];
+    const sorted = [...filtered];
     if (currentSort === "cumulative") {
       sorted.sort((a,b) => b.cumulative - a.cumulative);
     } else {
@@ -677,7 +696,12 @@ function renderStandings(data) {
       });
     }
 
-    let html = '<div class="table-scroll"><table class="standings"><thead><tr>';
+    let html = `<div class="league-filter" style="margin-left:0;margin-bottom:10px">`;
+    html += `<button class="${standingsFilter==='all'?'active':''}" onclick="setStandingsFilter('all')">ALL</button>`;
+    html += `<button class="${standingsFilter==='0'?'active':''}" onclick="setStandingsFilter('0')">L1</button>`;
+    html += `<button class="${standingsFilter==='1'?'active':''}" onclick="setStandingsFilter('1')">L2</button>`;
+    html += `</div>`;
+    html += '<div class="table-scroll"><table class="standings"><thead><tr>';
     html += '<th class="col-rank">#</th>';
     html += '<th class="col-name">TEAM</th>';
     html += `<th class="col-pts sortable ${currentSort==="cumulative"?"sorted":""}" data-sort="cumulative">PTS</th>`;
@@ -722,57 +746,46 @@ function renderStandings(data) {
 }
 
 /* ---- live ---- */
+let liveFilter = 'all';
+
+function setLiveFilter(f) { liveFilter = f; if (_appData) renderLive(_appData); }
+
 function renderLive(data) {
-  if (!data.gamesInProgress) {
-    const wk = data.currentWeek || 0;
-    if (wk < 1) return;
+  const wk = data.currentWeek || 0;
+  if (wk < 1) return;
 
-    const teams = [...data.teams].sort((a,b) =>
-      (b.scores[wk-1] || 0) - (a.scores[wk-1] || 0));
+  const allTeams = [...data.teams].sort((a,b) => (b.scores[wk-1]||0) - (a.scores[wk-1]||0));
+  const filtered = liveFilter === 'all' ? allTeams : allTeams.filter(t => String(t.leagueIdx) === liveFilter);
 
-    let html = `<div class="live-header"><div class="sec-head" style="margin-bottom:0"><h2>WEEK ${wk} RESULTS</h2></div>`;
-    if (data.lastUpdated) {
-      const d = new Date(data.lastUpdated);
-      html += `<div class="live-updated">Last updated ${d.toLocaleString("en-US",{timeZone:"America/Chicago",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})} CT</div>`;
-    }
-    html += `</div>`;
-    html += '<table class="live-table"><thead><tr>';
-    html += '<th class="col-rank">#</th><th>TEAM</th><th style="text-align:right">PTS</th>';
-    html += '</tr></thead><tbody>';
-    teams.forEach((t, i) => {
-      const pts = (t.scores[wk-1] || 0).toFixed(1);
-      html += `<tr style="cursor:pointer" onclick="openRoster('${t.leagueId}',${t.rosterId},${wk-1})"><td class="col-rank">${i+1}</td>`;
-      html += `<td><span class="team-link">${t.name}</span>`;
-      html += ` <span class="league-badge ${CONFIG.leagueColors[t.leagueIdx]||"league-0"}">L${t.leagueIdx+1}</span></td>`;
-      html += `<td class="col-pts">${pts}</td></tr>`;
-    });
-    html += '</tbody></table>';
-    document.getElementById("live-content").innerHTML = html;
-
+  let html = `<div class="live-header">`;
+  if (data.gamesInProgress) {
+    html += `<div class="live-banner"><span class="live-dot"></span>WEEK ${wk} IN PROGRESS</div>`;
   } else {
-    const wk = data.currentWeek;
-    const teams = [...data.teams].sort((a,b) =>
-      (b.scores[wk-1] || 0) - (a.scores[wk-1] || 0));
-
-    let html = `<div class="live-header"><div class="live-banner"><span class="live-dot"></span>WEEK ${wk} IN PROGRESS</div>`;
-    if (data.lastUpdated) {
-      const d = new Date(data.lastUpdated);
-      html += `<div class="live-updated">Last updated ${d.toLocaleString("en-US",{timeZone:"America/Chicago",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})} CT</div>`;
-    }
-    html += `</div>`;
-    html += '<table class="live-table"><thead><tr>';
-    html += '<th class="col-rank">#</th><th>TEAM</th><th style="text-align:right">PTS</th>';
-    html += '</tr></thead><tbody>';
-    teams.forEach((t, i) => {
-      const pts = (t.scores[wk-1] || 0).toFixed(1);
-      html += `<tr style="cursor:pointer" onclick="openRoster('${t.leagueId}',${t.rosterId},${wk-1})"><td class="col-rank">${i+1}</td>`;
-      html += `<td><span class="team-link">${t.name}</span>`;
-      html += ` <span class="league-badge ${CONFIG.leagueColors[t.leagueIdx]||"league-0"}">L${t.leagueIdx+1}</span></td>`;
-      html += `<td class="col-pts">${pts}</td></tr>`;
-    });
-    html += '</tbody></table>';
-    document.getElementById("live-content").innerHTML = html;
+    html += `<div class="sec-head" style="margin-bottom:0"><h2>WEEK ${wk}</h2></div>`;
   }
+  html += `<div class="league-filter">`;
+  html += `<button class="${liveFilter==='all'?'active':''}" onclick="setLiveFilter('all')">ALL</button>`;
+  html += `<button class="${liveFilter==='0'?'active':''}" onclick="setLiveFilter('0')">L1</button>`;
+  html += `<button class="${liveFilter==='1'?'active':''}" onclick="setLiveFilter('1')">L2</button>`;
+  html += `</div>`;
+  if (data.lastUpdated) {
+    const d = new Date(data.lastUpdated);
+    html += `<div class="live-updated">Last updated ${d.toLocaleString("en-US",{timeZone:"America/Chicago",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})} CT</div>`;
+  }
+  html += `</div>`;
+
+  html += '<table class="live-table"><thead><tr>';
+  html += '<th class="col-rank">#</th><th>TEAM</th><th style="text-align:right">PTS</th>';
+  html += '</tr></thead><tbody>';
+  filtered.forEach((t, i) => {
+    const pts = (t.scores[wk-1]||0).toFixed(1);
+    html += `<tr style="cursor:pointer" onclick="openRoster('${t.leagueId}',${t.rosterId},${wk-1})"><td class="col-rank">${i+1}</td>`;
+    html += `<td><span class="team-link">${t.name}</span>`;
+    html += ` <span class="league-badge ${CONFIG.leagueColors[t.leagueIdx]||"league-0"}">L${t.leagueIdx+1}</span></td>`;
+    html += `<td class="col-pts">${pts}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById("live-content").innerHTML = html;
 }
 
 /* ---- roster modal ---- */
