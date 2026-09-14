@@ -1,7 +1,7 @@
 {
   "currentWeek": 1,
   "gamesInProgress": true,
-  "lastUpdated": "2026-09-14T01:42:42.887Z",
+  "lastUpdated": "2026-09-14T01:59:26.172Z",
   "leagues": [
     {
       "id": "1389692043155996674",
@@ -169,13 +169,13 @@
       "leagueIdx": 0,
       "name": "calebjbauer",
       "scores": [
-        95.8
+        104.8
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 95.8,
+      "cumulative": 104.8,
       "sleeperUrl": "https://sleeper.com/roster/1389692043155996674/11"
     },
     {
@@ -244,13 +244,13 @@
       "leagueIdx": 1,
       "name": "nnjrh",
       "scores": [
-        134.06
+        134.16
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 134.06,
+      "cumulative": 134.16,
       "sleeperUrl": "https://sleeper.com/roster/1401244219137376256/4"
     },
     {
@@ -259,13 +259,13 @@
       "leagueIdx": 1,
       "name": "BowB4MePeasant777",
       "scores": [
-        125.1
+        126.66
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 125.1,
+      "cumulative": 126.66,
       "sleeperUrl": "https://sleeper.com/roster/1401244219137376256/5"
     },
     {
@@ -274,13 +274,13 @@
       "leagueIdx": 1,
       "name": "BeardedLegend",
       "scores": [
-        132.36
+        137.96
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 132.36,
+      "cumulative": 137.96,
       "sleeperUrl": "https://sleeper.com/roster/1401244219137376256/6"
     },
     {
@@ -319,13 +319,13 @@
       "leagueIdx": 1,
       "name": "calebterry",
       "scores": [
-        107.78
+        108.88
       ],
       "record": {
         "wins": 0,
         "losses": 0
       },
-      "cumulative": 107.78,
+      "cumulative": 108.88,
       "sleeperUrl": "https://sleeper.com/roster/1401244219137376256/9"
     },
     {
