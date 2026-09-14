@@ -2,6 +2,7 @@ name: Refresh Player Positions
 
 on:
   schedule:
+    - cron: '0 10 * * 2'
   workflow_dispatch:
 
 jobs:
