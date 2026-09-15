@@ -756,7 +756,7 @@ function renderStandings(data) {
     html += '<th class="col-name">TEAM</th>';
     html += `<th class="col-pts sortable ${currentSort==="cumulative"?"sorted":""}" data-sort="cumulative">PTS</th>`;
     html += `<th class="col-record sortable ${currentSort==="record"?"sorted":""}" data-sort="record">W/L</th>`;
-    for (let w = 1; w <= completedWeeks; w++) {
+    for (let w = completedWeeks; w >= 1; w--) {
       html += `<th class="col-week">W${w}</th>`;
     }
     html += '</tr></thead><tbody>';
@@ -772,7 +772,7 @@ function renderStandings(data) {
       html += `</td>`;
       html += `<td class="col-pts">${t.cumulative.toFixed(1)}</td>`;
       html += `<td class="col-record">${t.record.wins}\u2013${t.record.losses}</td>`;
-      for (let w = 0; w < completedWeeks; w++) {
+      for (let w = completedWeeks - 1; w >= 0; w--) {
         const score = t.scores[w] || 0;
         const isHigh = score === weekHighs[w] && score > 0;
         html += `<td class="col-week clickable${isHigh ? " week-high" : ""}" onclick="openRoster('${t.leagueId}',${t.rosterId},${w})">${score.toFixed(1)}</td>`;
