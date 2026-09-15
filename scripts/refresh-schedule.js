@@ -68,7 +68,11 @@ function slotLabel(kickoffISO) {
 }
 
 async function fetchWeekSchedule(week, seasonYear) {
-  const url = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?week=${week}&seasontype=2&dates=${seasonYear}`;
+  // NOTE: site.api.espn.com started rejecting non-browser requests (GitHub
+  // Actions, server-side scripts, etc.) with a permission error in Aug 2026.
+  // site.web.api.espn.com is the same endpoint, same path/params, and isn't
+  // affected — that's why this uses .web instead of the "documented" host.
+  const url = `https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?week=${week}&seasontype=2&dates=${seasonYear}`;
   const data = await fetchJSON(url);
 
   const teams = {};
@@ -120,8 +124,10 @@ async function main() {
   // Weeks strictly before the current one are done and won't change — reuse
   // the cache for those. Always refetch the current week since flex
   // scheduling can move Sunday/Monday/Thursday games later in the season.
+  // A week that's cached but empty (e.g. from a prior failed fetch) is NOT
+  // considered done — Object.keys check ensures those get retried.
   for (let w = 1; w <= currentWeek; w++) {
-    if (cache[w] && w < currentWeek) continue;
+    if (cache[w] && Object.keys(cache[w]).length > 0 && w < currentWeek) continue;
     console.log(`Fetching schedule for week ${w}...`);
     try {
       cache[w] = await fetchWeekSchedule(w, seasonYear);
