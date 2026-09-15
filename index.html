@@ -24,7 +24,7 @@
 
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overscroll-behavior-y: contain; }
 body {
   background: var(--ground);
   color: var(--concrete);
@@ -32,6 +32,7 @@ body {
   -webkit-font-smoothing: antialiased;
   line-height: 1.4;
   min-height: 100dvh;
+  overscroll-behavior-y: contain;
 }
 
 /* ---- layout ---- */
@@ -108,6 +109,10 @@ section + section { border-top: none; }
   font-size: 14px; font-weight: bold; letter-spacing: .10em;
   color: var(--muted); opacity: .7;
 }
+.sec-head-row {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px; width: 100%;
+}
 
 /* ---- empty states ---- */
 .empty {
@@ -134,7 +139,7 @@ section + section { border-top: none; }
 /* ---- controls row (sort buttons + league filter, filter pushed right) ---- */
 .controls-row {
   display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 10px; margin-bottom: 16px;
+  flex-wrap: wrap; gap: 10px;
 }
 .controls-row .league-filter { margin-left: 0; }
 
@@ -145,7 +150,7 @@ section + section { border-top: none; }
 }
 
 /* ---- standings table ---- */
-.standings { width: 100%; border-collapse: collapse; min-width: 600px; }
+.standings { border-collapse: collapse; table-layout: fixed; }
 .standings th, .standings td {
   padding: 5px 6px; text-align: left; white-space: nowrap;
   font-size: 13px; border-bottom: 1px solid rgba(242,237,227,.10);
@@ -166,8 +171,8 @@ section + section { border-top: none; }
 .standings .col-name {
   position: sticky; z-index: 3; background: var(--ground);
 }
-.standings .col-rank { left: 0; width: 20px; text-align: center; padding-left: 3px; padding-right: 3px; }
-.standings .col-name { left: 20px; padding-left: 6px; }
+.standings .col-rank { left: 0; width: 22px; text-align: center; padding-left: 3px; padding-right: 3px; }
+.standings .col-name { left: 22px; width: 82px; padding-left: 6px; overflow: hidden; text-overflow: ellipsis; }
 /* sticky headers need higher z than sticky cells */
 .standings thead .col-rank,
 .standings thead .col-name { z-index: 5; }
@@ -195,9 +200,9 @@ section + section { border-top: none; }
 .league-1 { background: rgba(224,168,60,.35); color: var(--gold); }
 .league-2 { background: rgba(110,156,194,.30); color: var(--streak); }
 
-.standings .col-pts { font-weight: bold; padding-left: 4px; padding-right: 4px; }
-.standings .col-record { color: var(--muted); font-size: 13px; padding-left: 4px; padding-right: 4px; }
-.standings .col-week { color: var(--muted); font-size: 13px; text-align: right; padding-left: 3px; padding-right: 3px; }
+.standings .col-pts { font-weight: bold; width: 50px; padding-left: 4px; padding-right: 6px; }
+.standings .col-record { color: var(--muted); font-size: 13px; width: 36px; padding-left: 3px; padding-right: 5px; }
+.standings .col-week { color: var(--muted); font-size: 13px; text-align: right; width: 44px; padding-left: 3px; padding-right: 9px; }
 .standings th.col-week { text-align: right; }
 .standings .week-high { color: var(--gold); font-weight: bold; }
 
@@ -351,7 +356,7 @@ section + section { border-top: none; }
 .roster-row.starter { }
 .roster-row.bench-row { opacity: .45; }
 .roster-row.bench-row.bench-pending { opacity: 1; }
-.roster-row .player-meta .game-slot { color: var(--gold); opacity: .85; }
+.roster-row .player-meta .game-slot { color: var(--muted); }
 .roster-row.bench-row.bench-pending .player-meta .game-slot { font-weight: bold; }
 .roster-row .pos-tag {
   width: 26px; font-size: 9px; font-weight: bold; flex-shrink: 0;
@@ -411,7 +416,7 @@ footer {
   header svg { max-width: 240px; }
   .sec-head { flex-direction: column; gap: 4px; }
   .sec-head .sub { font-size: 12px; }
-  .standings .col-name { max-width: 96px; overflow: hidden; text-overflow: ellipsis; }
+
   .sticky-bar nav a { padding: 8px 14px; font-size: 11px; }
   .sticky-title { padding: 8px 0 0; }
   .sticky-title h1 { font-size: 14px; }
@@ -487,17 +492,17 @@ footer {
   <div class="wrap">
     <div class="sec-head">
       <h2>STANDINGS</h2>
-      <div class="sub" id="standings-sub"></div>
-    </div>
-    <div id="standings-controls" style="display:none">
-      <div class="controls-row">
-        <div class="sort-bar">
-          <button class="sort-btn active" data-sort="cumulative">POINTS</button>
-          <button class="sort-btn" data-sort="record">RECORD</button>
-        </div>
-        <div class="league-filter" id="standings-league-filter">
-          <button data-league="0" onclick="toggleStandingsFilter('0')">L1</button>
-          <button data-league="1" onclick="toggleStandingsFilter('1')">L2</button>
+      <div class="sec-head-row">
+        <div class="sub" id="standings-sub"></div>
+        <div id="standings-controls" class="controls-row" style="display:none">
+          <div class="sort-bar">
+            <button class="sort-btn active" data-sort="cumulative">POINTS</button>
+            <button class="sort-btn" data-sort="record">RECORD</button>
+          </div>
+          <div class="league-filter" id="standings-league-filter">
+            <button data-league="0" onclick="toggleStandingsFilter('0')">L1</button>
+            <button data-league="1" onclick="toggleStandingsFilter('1')">L2</button>
+          </div>
         </div>
       </div>
     </div>
@@ -641,11 +646,17 @@ const CONFIG = {
 
   navLinks.forEach(a => a.addEventListener("click", e => {
     e.preventDefault();
-    showTab(a.getAttribute("href").slice(1));
+    const id = a.getAttribute("href").slice(1);
+    showTab(id);
+    history.replaceState(null, "", "#" + id);
   }));
 
-  // default tab
-  showTab("scores");
+  // default tab — restore from the URL hash if one is present (so a
+  // reload, including pull-to-refresh, reopens on the tab you were on
+  // instead of always resetting to Scores), otherwise fall back to Scores
+  const validTabs = new Set(["scores", "standings", "playoffs", "rules"]);
+  const startTab = validTabs.has(location.hash.slice(1)) ? location.hash.slice(1) : "scores";
+  showTab(startTab);
 
   // try loading data
   let data = null;
@@ -726,7 +737,15 @@ function renderStandings(data) {
       });
     }
 
-    let html = '<div class="table-scroll"><table class="standings"><thead><tr>';
+    // Column widths must match the CSS (.col-rank/.col-name/.col-pts/.col-record/.col-week).
+    // table-layout:fixed only truly locks column widths if the <table> itself
+    // has an explicit width — without it, a long unbroken team name will
+    // silently stretch the whole table (and every row) past its columns.
+    const TABLE_COL_WIDTHS = { rank: 22, name: 82, pts: 50, record: 36, week: 44 };
+    const tableWidth = TABLE_COL_WIDTHS.rank + TABLE_COL_WIDTHS.name + TABLE_COL_WIDTHS.pts +
+      TABLE_COL_WIDTHS.record + TABLE_COL_WIDTHS.week * completedWeeks;
+
+    let html = `<div class="table-scroll"><table class="standings" style="width:${tableWidth}px"><thead><tr>`;
     html += '<th class="col-rank">#</th>';
     html += '<th class="col-name">TEAM</th>';
     html += `<th class="col-pts sortable ${currentSort==="cumulative"?"sorted":""}" data-sort="cumulative">PTS</th>`;
