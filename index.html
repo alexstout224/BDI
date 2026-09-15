@@ -700,7 +700,7 @@ function renderStandings(data) {
   if (completedWeeks < 1) return;
 
   document.getElementById("standings-sub").textContent =
-    "WEEK " + completedWeeks;
+    "THROUGH WEEK " + completedWeeks;
   document.getElementById("standings-controls").style.display = "";
 
   document.querySelectorAll("#standings-league-filter button").forEach(btn => {
