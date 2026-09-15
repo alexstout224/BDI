@@ -123,8 +123,8 @@ section + section { border-top: none; }
 }
 .sort-btn {
   background: transparent; border: 1px solid rgba(242,237,227,.20);
-  color: var(--muted); font-size: 12px; font-weight: bold;
-  letter-spacing: .12em; padding: 7px 14px;
+  color: var(--muted); font-size: 9px; font-weight: bold;
+  letter-spacing: .08em; padding: 5px 10px;
   cursor: pointer; transition: all .15s; border-radius: 2px;
   font-family: inherit;
 }
@@ -147,7 +147,7 @@ section + section { border-top: none; }
 /* ---- standings table ---- */
 .standings { width: 100%; border-collapse: collapse; min-width: 600px; }
 .standings th, .standings td {
-  padding: 5px 10px; text-align: left; white-space: nowrap;
+  padding: 5px 6px; text-align: left; white-space: nowrap;
   font-size: 13px; border-bottom: 1px solid rgba(242,237,227,.10);
 }
 .standings th {
@@ -166,8 +166,8 @@ section + section { border-top: none; }
 .standings .col-name {
   position: sticky; z-index: 3; background: var(--ground);
 }
-.standings .col-rank { left: 0; width: 30px; text-align: center; }
-.standings .col-name { left: 30px; }
+.standings .col-rank { left: 0; width: 20px; text-align: center; padding-left: 3px; padding-right: 3px; }
+.standings .col-name { left: 20px; padding-left: 6px; }
 /* sticky headers need higher z than sticky cells */
 .standings thead .col-rank,
 .standings thead .col-name { z-index: 5; }
@@ -195,9 +195,9 @@ section + section { border-top: none; }
 .league-1 { background: rgba(224,168,60,.35); color: var(--gold); }
 .league-2 { background: rgba(110,156,194,.30); color: var(--streak); }
 
-.standings .col-pts { font-weight: bold; }
-.standings .col-record { color: var(--muted); font-size: 13px; }
-.standings .col-week { color: var(--muted); font-size: 13px; text-align: right; }
+.standings .col-pts { font-weight: bold; padding-left: 4px; padding-right: 4px; }
+.standings .col-record { color: var(--muted); font-size: 13px; padding-left: 4px; padding-right: 4px; }
+.standings .col-week { color: var(--muted); font-size: 13px; text-align: right; padding-left: 3px; padding-right: 3px; }
 .standings th.col-week { text-align: right; }
 .standings .week-high { color: var(--gold); font-weight: bold; }
 
@@ -299,7 +299,7 @@ section + section { border-top: none; }
 }
 .league-filter button {
   font-family: inherit; font-size: 9px; font-weight: bold;
-  letter-spacing: .08em; padding: 2px 8px; border-radius: 2px;
+  letter-spacing: .08em; padding: 5px 10px; border-radius: 2px;
   border: 1px solid rgba(242,237,227,.18); background: transparent;
   color: var(--muted); cursor: pointer; transition: all .15s;
 }
@@ -412,7 +412,6 @@ footer {
   .sec-head { flex-direction: column; gap: 4px; }
   .sec-head .sub { font-size: 12px; }
   .standings .col-name { max-width: 96px; overflow: hidden; text-overflow: ellipsis; }
-  .sort-btn { padding: 6px 10px; font-size: 11px; }
   .sticky-bar nav a { padding: 8px 14px; font-size: 11px; }
   .sticky-title { padding: 8px 0 0; }
   .sticky-title h1 { font-size: 14px; }
@@ -493,13 +492,12 @@ footer {
     <div id="standings-controls" style="display:none">
       <div class="controls-row">
         <div class="sort-bar">
-          <button class="sort-btn active" data-sort="cumulative">TOTAL POINTS</button>
+          <button class="sort-btn active" data-sort="cumulative">POINTS</button>
           <button class="sort-btn" data-sort="record">RECORD</button>
         </div>
         <div class="league-filter" id="standings-league-filter">
-          <button class="active" data-league="all" onclick="setStandingsFilter('all')">ALL</button>
-          <button data-league="0" onclick="setStandingsFilter('0')">L1</button>
-          <button data-league="1" onclick="setStandingsFilter('1')">L2</button>
+          <button data-league="0" onclick="toggleStandingsFilter('0')">L1</button>
+          <button data-league="1" onclick="toggleStandingsFilter('1')">L2</button>
         </div>
       </div>
     </div>
@@ -676,11 +674,17 @@ const CONFIG = {
 let standingsFilter = 'all';
 
 function setStandingsFilter(f) { standingsFilter = f; if (_appData) renderStandings(_appData); }
+function toggleStandingsFilter(idx) { setStandingsFilter(standingsFilter === idx ? 'all' : idx); }
 
 function renderStandings(data) {
   const allTeams = [...data.teams];
   const weeks = data.currentWeek || 0;
-  const completedWeeks = data.gamesInProgress ? weeks - 1 : weeks;
+  // Sleeper's currentWeek advances on its own calendar cutoff, often before
+  // that week's games actually kick off. So "not in a live window" doesn't
+  // mean the current week is done — it might not have started at all yet.
+  // Only count it as complete if it actually has recorded score data.
+  const currentWeekHasScores = weeks > 0 && allTeams.some(t => (t.scores[weeks - 1] || 0) > 0);
+  const completedWeeks = currentWeekHasScores && !data.gamesInProgress ? weeks : weeks - 1;
 
   if (completedWeeks < 1) return;
 
@@ -770,9 +774,15 @@ function renderStandings(data) {
 let liveFilter = 'all';
 
 function setLiveFilter(f) { liveFilter = f; if (_appData) renderLive(_appData); }
+function toggleLiveFilter(idx) { setLiveFilter(liveFilter === idx ? 'all' : idx); }
 
 function renderLive(data) {
-  const wk = data.currentWeek || 0;
+  const currentWeek = data.currentWeek || 0;
+  if (currentWeek < 1) return;
+  // Same currentWeek-ticks-early issue as standings: if the reported week
+  // has no score data at all yet, show the last week that actually played.
+  const currentWeekHasScores = data.teams.some(t => (t.scores[currentWeek - 1] || 0) > 0);
+  const wk = currentWeekHasScores ? currentWeek : currentWeek - 1;
   if (wk < 1) return;
 
   const allTeams = [...data.teams].sort((a,b) => (b.scores[wk-1]||0) - (a.scores[wk-1]||0));
@@ -786,9 +796,8 @@ function renderLive(data) {
     html += `<div class="sec-head" style="margin-bottom:0"><h2>WEEK ${wk}</h2></div>`;
   }
   html += `<div class="league-filter">`;
-  html += `<button class="${liveFilter==='all'?'active':''}" onclick="setLiveFilter('all')">ALL</button>`;
-  html += `<button class="${liveFilter==='0'?'active':''}" onclick="setLiveFilter('0')">L1</button>`;
-  html += `<button class="${liveFilter==='1'?'active':''}" onclick="setLiveFilter('1')">L2</button>`;
+  html += `<button class="${liveFilter==='0'?'active':''}" onclick="toggleLiveFilter('0')">L1</button>`;
+  html += `<button class="${liveFilter==='1'?'active':''}" onclick="toggleLiveFilter('1')">L2</button>`;
   html += `</div>`;
   html += `</div>`;
   if (data.lastUpdated) {
