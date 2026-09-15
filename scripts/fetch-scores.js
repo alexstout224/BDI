@@ -18,6 +18,7 @@ const NAME_OVERRIDES = {};
 const LINEUP = { QB: 1, RB: 2, WR: 3, TE: 1 };
 const OUT_PATH = path.join(__dirname, '..', 'data', 'scores.json');
 const POS_PATH = path.join(__dirname, '..', 'data', 'player-positions.json');
+const SCHEDULE_PATH = path.join(__dirname, '..', 'data', 'schedule.json');
 
 function fetchJSON(urlStr) {
   return new Promise((resolve, reject) => {
@@ -32,7 +33,7 @@ function fetchJSON(urlStr) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-function computeOptimalLineup(playersPoints, playerCache) {
+function computeOptimalLineup(playersPoints, playerCache, weekSchedule) {
   if (!playersPoints || typeof playersPoints !== 'object') return { score: 0, roster: [] };
 
   const players = [];
@@ -78,7 +79,11 @@ function computeOptimalLineup(playersPoints, playerCache) {
     .sort((a, b) => (slotOrder[slots[a.pid]] ?? 9) - (slotOrder[slots[b.pid]] ?? 9) || b.pts - a.pts);
   for (const p of starterList) {
     score += p.pts;
-    roster.push({ n: p.name, p: p.pos, t: p.team, pts: p.pts, s: true, sl: slots[p.pid] });
+    const g = weekSchedule && weekSchedule[p.team];
+    roster.push({
+      n: p.name, p: p.pos, t: p.team, pts: p.pts, s: true, sl: slots[p.pid],
+      ...(g ? { g: { slot: g.slot, k: g.kickoff } } : {}),
+    });
   }
 
   // Bench sorted by position order then score
@@ -86,7 +91,11 @@ function computeOptimalLineup(playersPoints, playerCache) {
   const benchList = players.filter(p => !starters.has(p.pid))
     .sort((a, b) => (posOrder[a.pos] ?? 9) - (posOrder[b.pos] ?? 9) || b.pts - a.pts);
   for (const p of benchList) {
-    roster.push({ n: p.name, p: p.pos, t: p.team, pts: p.pts, s: false });
+    const g = weekSchedule && weekSchedule[p.team];
+    roster.push({
+      n: p.name, p: p.pos, t: p.team, pts: p.pts, s: false,
+      ...(g ? { g: { slot: g.slot, k: g.kickoff } } : {}),
+    });
   }
 
   return { score: Math.round(score * 100) / 100, roster };
@@ -135,6 +144,20 @@ async function main() {
   const playerCache = JSON.parse(fs.readFileSync(POS_PATH, 'utf8'));
   console.log(`Loaded ${Object.keys(playerCache).length} players from cache`);
 
+  // Schedule cache is optional — if it's missing, roster entries just won't
+  // carry game-slot info and the site falls back to its old display.
+  let scheduleData = {};
+  if (fs.existsSync(SCHEDULE_PATH)) {
+    try {
+      scheduleData = JSON.parse(fs.readFileSync(SCHEDULE_PATH, 'utf8'));
+      console.log(`Loaded schedule cache for ${Object.keys(scheduleData).length} weeks`);
+    } catch (e) {
+      console.warn('WARNING: could not parse data/schedule.json, continuing without it.');
+    }
+  } else {
+    console.warn('WARNING: data/schedule.json not found — game windows will not display. Run Refresh Schedule.');
+  }
+
   const allTeams = [];
   const leaguesMeta = [];
 
@@ -166,7 +189,8 @@ async function main() {
 
         while (wd.scores.length < w - 1) { wd.scores.push(0); wd.rosters.push([]); }
 
-        const result = computeOptimalLineup(m.players_points, playerCache);
+        const weekSchedule = scheduleData[w];
+        const result = computeOptimalLineup(m.players_points, playerCache, weekSchedule);
         const fallback = result.score > 0 ? result.score : (m.points || 0);
 
         wd.scores[w - 1] = fallback;
