@@ -109,11 +109,16 @@ section + section { border-top: none; }
   font-size: 14px; font-weight: bold; letter-spacing: .10em;
   color: var(--muted); opacity: .7;
 }
+  
 .sec-head-row {
   display: flex; align-items: center; justify-content: space-between;
   flex-wrap: wrap; gap: 4px; width: 100%;
 }
-
+.sec-head-title-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; width: 100%;
+}
+.sec-head-title-row .league-filter { margin-left: 0; }
 /* ---- empty states ---- */
 .empty {
   padding: 40px 20px; text-align: center;
@@ -124,7 +129,7 @@ section + section { border-top: none; }
 
 /* ---- sort controls ---- */
 .sort-bar {
-  display: flex; gap: 8px; margin-bottom: 0; flex-wrap: wrap;
+  display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap;
 }
 .sort-btn {
   background: transparent; border: 1px solid rgba(242,237,227,.20);
@@ -171,8 +176,8 @@ section + section { border-top: none; }
 .standings .col-name {
   position: sticky; z-index: 3; background: var(--ground);
 }
-.standings .col-rank { left: 0; width: 22px; text-align: center; padding-left: 3px; padding-right: 3px; }
-.standings .col-name { left: 22px; width: 110px; padding-left: 6px; overflow: hidden; text-overflow: ellipsis; }
+.standings .col-rank { left: 0; width: 18px; text-align: center; padding-left: 3px; padding-right: 3px; }
+.standings .col-name { left: 22px; width: 130px; padding-left: 6px; overflow: hidden; text-overflow: ellipsis; }
 /* sticky headers need higher z than sticky cells */
 .standings thead .col-rank,
 .standings thead .col-name { z-index: 5; }
@@ -491,21 +496,21 @@ footer {
 <section id="standings">
   <div class="wrap">
     <div class="sec-head">
-      <h2>STANDINGS</h2>
-      <div class="sec-head-row">
-        <div class="sub" id="standings-sub"></div>
-        <div id="standings-controls" class="controls-row" style="display:none">
-          <div class="sort-bar">
-            <button class="sort-btn active" data-sort="cumulative">POINTS</button>
-            <button class="sort-btn" data-sort="record">RECORD</button>
-          </div>
-          <div class="league-filter" id="standings-league-filter">
-            <button data-league="0" onclick="toggleStandingsFilter('0')">L1</button>
-            <button data-league="1" onclick="toggleStandingsFilter('1')">L2</button>
-          </div>
-        </div>
-      </div>
+  <div class="sec-head-title-row">
+    <h2>STANDINGS</h2>
+    <div class="league-filter" id="standings-league-filter" style="display:none">
+      <button data-league="0" onclick="toggleStandingsFilter('0')">L1</button>
+      <button data-league="1" onclick="toggleStandingsFilter('1')">L2</button>
     </div>
+  </div>
+  <div class="sec-head-row">
+    <div class="sub" id="standings-sub"></div>
+    <div id="standings-controls" class="sort-bar" style="display:none">
+      <button class="sort-btn active" data-sort="cumulative">POINTS</button>
+      <button class="sort-btn" data-sort="record">RECORD</button>
+    </div>
+  </div>
+</div>
     <div id="standings-content">
       <div class="empty">
         <p class="big">Standings populate after Week 1</p>
@@ -702,7 +707,8 @@ function renderStandings(data) {
   document.getElementById("standings-sub").textContent =
     "THROUGH WEEK " + completedWeeks;
   document.getElementById("standings-controls").style.display = "";
-
+  document.getElementById("standings-league-filter").style.display = "";
+  
   document.querySelectorAll("#standings-league-filter button").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.league === standingsFilter);
   });
@@ -741,7 +747,7 @@ function renderStandings(data) {
     // table-layout:fixed only truly locks column widths if the <table> itself
     // has an explicit width — without it, a long unbroken team name will
     // silently stretch the whole table (and every row) past its columns.
-    const TABLE_COL_WIDTHS = { rank: 22, name: 110, pts: 50, record: 36, week: 44 };
+    const TABLE_COL_WIDTHS = { rank: 18, name: 130, pts: 50, record: 36, week: 44 };
     const tableWidth = TABLE_COL_WIDTHS.rank + TABLE_COL_WIDTHS.name + TABLE_COL_WIDTHS.pts +
       TABLE_COL_WIDTHS.record + TABLE_COL_WIDTHS.week * completedWeeks;
 
