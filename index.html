@@ -119,7 +119,7 @@ section + section { border-top: none; }
 
 /* ---- sort controls ---- */
 .sort-bar {
-  display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+  display: flex; gap: 8px; margin-bottom: 0; flex-wrap: wrap;
 }
 .sort-btn {
   background: transparent; border: 1px solid rgba(242,237,227,.20);
@@ -131,6 +131,13 @@ section + section { border-top: none; }
 .sort-btn:hover { border-color: var(--concrete); color: var(--concrete); }
 .sort-btn.active { background: var(--gold); color: var(--ground); border-color: var(--gold); }
 
+/* ---- controls row (sort buttons + league filter, filter pushed right) ---- */
+.controls-row {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px; margin-bottom: 16px;
+}
+.controls-row .league-filter { margin-left: 0; }
+
 /* ---- table wrapper (horizontal scroll) ---- */
 .table-scroll {
   overflow-x: auto; -webkit-overflow-scrolling: touch;
@@ -140,8 +147,8 @@ section + section { border-top: none; }
 /* ---- standings table ---- */
 .standings { width: 100%; border-collapse: collapse; min-width: 600px; }
 .standings th, .standings td {
-  padding: 9px 12px; text-align: left; white-space: nowrap;
-  font-size: 14px; border-bottom: 1px solid rgba(242,237,227,.10);
+  padding: 5px 10px; text-align: left; white-space: nowrap;
+  font-size: 13px; border-bottom: 1px solid rgba(242,237,227,.10);
 }
 .standings th {
   font-size: 11px; font-weight: bold; letter-spacing: .14em;
@@ -159,8 +166,8 @@ section + section { border-top: none; }
 .standings .col-name {
   position: sticky; z-index: 3; background: var(--ground);
 }
-.standings .col-rank { left: 0; width: 42px; text-align: center; }
-.standings .col-name { left: 42px; }
+.standings .col-rank { left: 0; width: 30px; text-align: center; }
+.standings .col-name { left: 30px; }
 /* sticky headers need higher z than sticky cells */
 .standings thead .col-rank,
 .standings thead .col-name { z-index: 5; }
@@ -171,7 +178,7 @@ section + section { border-top: none; }
 .standings tbody tr:hover .col-rank,
 .standings tbody tr:hover .col-name { background: var(--ground-up); }
 
-.standings .col-rank { color: var(--muted); font-size: 13px; }
+.standings .col-rank { color: var(--muted); font-size: 12px; }
 .standings .team-link {
   color: var(--concrete); text-decoration: none;
   border-bottom: 1px solid rgba(242,237,227,.25);
@@ -204,6 +211,11 @@ section + section { border-top: none; }
 .live-header {
   margin-bottom: 8px;
 }
+.live-header-row {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px;
+}
+.live-header-row .league-filter { margin-left: 0; }
 .live-banner {
   display: inline-flex; align-items: center; gap: 8px;
   background: var(--red); color: #fff;
@@ -338,6 +350,9 @@ section + section { border-top: none; }
 }
 .roster-row.starter { }
 .roster-row.bench-row { opacity: .45; }
+.roster-row.bench-row.bench-pending { opacity: 1; }
+.roster-row .player-meta .game-slot { color: var(--gold); opacity: .85; }
+.roster-row.bench-row.bench-pending .player-meta .game-slot { font-weight: bold; }
 .roster-row .pos-tag {
   width: 26px; font-size: 9px; font-weight: bold; flex-shrink: 0;
 }
@@ -396,7 +411,7 @@ footer {
   header svg { max-width: 240px; }
   .sec-head { flex-direction: column; gap: 4px; }
   .sec-head .sub { font-size: 12px; }
-  .standings .col-name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+  .standings .col-name { max-width: 96px; overflow: hidden; text-overflow: ellipsis; }
   .sort-btn { padding: 6px 10px; font-size: 11px; }
   .sticky-bar nav a { padding: 8px 14px; font-size: 11px; }
   .sticky-title { padding: 8px 0 0; }
@@ -476,9 +491,16 @@ footer {
       <div class="sub" id="standings-sub"></div>
     </div>
     <div id="standings-controls" style="display:none">
-      <div class="sort-bar">
-        <button class="sort-btn active" data-sort="cumulative">TOTAL POINTS</button>
-        <button class="sort-btn" data-sort="record">RECORD</button>
+      <div class="controls-row">
+        <div class="sort-bar">
+          <button class="sort-btn active" data-sort="cumulative">TOTAL POINTS</button>
+          <button class="sort-btn" data-sort="record">RECORD</button>
+        </div>
+        <div class="league-filter" id="standings-league-filter">
+          <button class="active" data-league="all" onclick="setStandingsFilter('all')">ALL</button>
+          <button data-league="0" onclick="setStandingsFilter('0')">L1</button>
+          <button data-league="1" onclick="setStandingsFilter('1')">L2</button>
+        </div>
       </div>
     </div>
     <div id="standings-content">
@@ -666,6 +688,10 @@ function renderStandings(data) {
     "THROUGH WEEK " + completedWeeks;
   document.getElementById("standings-controls").style.display = "";
 
+  document.querySelectorAll("#standings-league-filter button").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.league === standingsFilter);
+  });
+
   const filtered = standingsFilter === 'all' ? allTeams : allTeams.filter(t => String(t.leagueIdx) === standingsFilter);
 
   // find week highs across ALL teams (not just filtered) for gold highlights
@@ -696,12 +722,7 @@ function renderStandings(data) {
       });
     }
 
-    let html = `<div class="league-filter" style="margin-left:0;margin-bottom:10px">`;
-    html += `<button class="${standingsFilter==='all'?'active':''}" onclick="setStandingsFilter('all')">ALL</button>`;
-    html += `<button class="${standingsFilter==='0'?'active':''}" onclick="setStandingsFilter('0')">L1</button>`;
-    html += `<button class="${standingsFilter==='1'?'active':''}" onclick="setStandingsFilter('1')">L2</button>`;
-    html += `</div>`;
-    html += '<div class="table-scroll"><table class="standings"><thead><tr>';
+    let html = '<div class="table-scroll"><table class="standings"><thead><tr>';
     html += '<th class="col-rank">#</th>';
     html += '<th class="col-name">TEAM</th>';
     html += `<th class="col-pts sortable ${currentSort==="cumulative"?"sorted":""}" data-sort="cumulative">PTS</th>`;
@@ -758,6 +779,7 @@ function renderLive(data) {
   const filtered = liveFilter === 'all' ? allTeams : allTeams.filter(t => String(t.leagueIdx) === liveFilter);
 
   let html = `<div class="live-header">`;
+  html += `<div class="live-header-row">`;
   if (data.gamesInProgress) {
     html += `<div class="live-banner"><span class="live-dot"></span>WEEK ${wk} IN PROGRESS</div>`;
   } else {
@@ -767,6 +789,7 @@ function renderLive(data) {
   html += `<button class="${liveFilter==='all'?'active':''}" onclick="setLiveFilter('all')">ALL</button>`;
   html += `<button class="${liveFilter==='0'?'active':''}" onclick="setLiveFilter('0')">L1</button>`;
   html += `<button class="${liveFilter==='1'?'active':''}" onclick="setLiveFilter('1')">L2</button>`;
+  html += `</div>`;
   html += `</div>`;
   if (data.lastUpdated) {
     const d = new Date(data.lastUpdated);
@@ -790,6 +813,22 @@ function renderLive(data) {
 
 /* ---- roster modal ---- */
 let _appData = null;
+
+// Rough estimate of when a game window closes: kickoff + ~4 hours covers
+// almost every NFL game (blowouts run short, overtime runs long, but this
+// is just for a dimming cue, not a scoring decision).
+const GAME_DURATION_MS = 4 * 60 * 60 * 1000;
+
+function isGameClosed(g) {
+  if (!g || !g.k) return true; // no schedule data yet, or a bye — fall back to dimmed
+  if (g.slot === 'BYE') return true;
+  return Date.now() >= new Date(g.k).getTime() + GAME_DURATION_MS;
+}
+
+function gameMetaHTML(team, g) {
+  if (!g || !g.slot) return team;
+  return `${team} <span class="game-slot">${g.slot}</span>`;
+}
 
 function openRoster(leagueId, rosterId, weekIdx) {
   if (!_appData) return;
@@ -836,20 +875,22 @@ function openRoster(leagueId, rosterId, weekIdx) {
     html += `<div class="pos-tag ${posColorClass(slot)}">${slot}</div>`;
     html += `<div class="player-info">`;
     html += `<span class="player-name">${pl.n}</span>`;
-    html += `<span class="player-meta">${pl.t}</span>`;
+    html += `<span class="player-meta">${gameMetaHTML(pl.t, pl.g)}</span>`;
     html += `</div>`;
     html += `<div class="player-pts">${pl.pts.toFixed(1)}</div>`;
     html += `</div>`;
   });
 
-  // Bench
+  // Bench — only dim once a player's game window has closed; players still
+  // to play (or currently playing) stay full brightness.
   html += `<div class="roster-section-label bench">BENCH</div>`;
   bench.forEach(pl => {
-    html += `<div class="roster-row bench-row">`;
+    const pending = !isGameClosed(pl.g);
+    html += `<div class="roster-row bench-row${pending ? ' bench-pending' : ''}">`;
     html += `<div class="pos-tag ${posColorClass(pl.p)}">${pl.p}</div>`;
     html += `<div class="player-info">`;
     html += `<span class="player-name">${pl.n}</span>`;
-    html += `<span class="player-meta">${pl.t}</span>`;
+    html += `<span class="player-meta">${gameMetaHTML(pl.t, pl.g)}</span>`;
     html += `</div>`;
     html += `<div class="player-pts">${pl.pts.toFixed(1)}</div>`;
     html += `</div>`;
