@@ -17,6 +17,8 @@ on:
     - cron: '*/10 0-4 * * 0'
     # Daily morning sync (6am ET = 10:00 UTC)
     - cron: '0 10 * * *'
+      # Sunday early/international games (7am-1pm ET = 11:00-16:59 UTC) 
+    - cron: '*/10 11-16 * * 0'                                          
 
   # Manual trigger from GitHub UI
   workflow_dispatch:
