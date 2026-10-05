@@ -315,7 +315,7 @@ table.race .r-back.lead { color: var(--concrete); font-weight: bold; }
 table.race .r-rec { width: 52px; color: var(--muted); }
 table.race .r-rec.lead { color: var(--concrete); font-weight: bold; }  
 table.race .r-odds { width: 56px; text-align: right; font-weight: bold; }
-table.race th.r-back, table.race th.r-odds { text-align: right; }
+table.race th.r-back, table.race th.r-rec, table.race th.r-odds { text-align: right; }
 table.race .team-link {
   color: var(--concrete); cursor: pointer;
   border-bottom: 1px solid rgba(242,237,227,.25);
@@ -907,7 +907,7 @@ function renderRace(data) {
     const sorted = [...lt].sort((a, b) => (b.race.odds - a.race.odds) || (b.race.pts - a.race.pts));
  
     html += `<div class="race-league"><div class="race-league-head">${(lg.name || "League " + (li + 1)).toUpperCase()}</div>`;
-    html += `<table class="race"><thead><tr><th class="r-rank">#</th><th class="r-name">TEAM</th><th class="r-back">PTS</th><th class="r-rec">W/L</th><th class="r-odds">${isFinal ? "" : "ODDS"}</th></tr></thead><tbody>`;
+    html += `<table class="race"><thead><tr><th class="r-rank">#</th><th class="r-name">TEAM</th><th class="r-back">PTS</th><th class="r-rec">WINS</th><th class="r-odds">${isFinal ? "" : "ODDS"}</th></tr></thead><tbody>`;
     sorted.forEach((t, i) => {
       const r = t.race;
       const lead = r.pts === leaderPts;
@@ -918,7 +918,11 @@ function renderRace(data) {
       html += `<tr class="${cls.trim()}"><td class="r-rank">${i + 1}</td>`;
       html += `<td class="r-name"><span class="team-link" onclick="openRoster('${t.leagueId}',${t.rosterId},${race.finalWeeks - 1})">${t.name}</span></td>`;
       html += `<td class="r-back${lead ? " lead" : ""}">${back}</td>`;
-      html += `<td class="r-rec${winsOf(r) === bestWins ? " lead" : ""}">${rec}</td>`;
+       // wins, shown like the PTS column: everyone tied for the most wins shows their
+      // total, everyone else shows how many wins back (−1, −2, ...)
+      const fw = n => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+      const winsLead = winsOf(r) === bestWins;
+      html += `<td class="r-rec${winsLead ? " lead" : ""}">${winsLead ? fw(winsOf(r)) : "\u2212" + fw(bestWins - winsOf(r))}</td>`;
       html += `<td class="r-odds ${oddsCls}">${fmtOdds(r.odds, isFinal)}</td></tr>`;
     });
     html += `</tbody></table></div>`;
