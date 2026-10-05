@@ -280,7 +280,60 @@ section + section { border-top: none; }
   font-size: 13px; font-weight: bold; color: var(--gold);
   letter-spacing: .04em;
 }
-
+/* ---- playoff race ---- */
+.race-top {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px; margin-bottom: 8px;
+}
+.race-title { font-size: 14px; font-weight: bold; letter-spacing: .14em; }
+.race-title .race-through {
+  color: var(--muted); opacity: .7; margin-left: 8px;
+  font-size: 12px; letter-spacing: .10em;
+}
+.race-sort-btn {
+  background: transparent; border: 1px solid rgba(242,237,227,.20);
+  color: var(--muted); font-size: 9px; font-weight: bold;
+  letter-spacing: .08em; padding: 5px 10px;
+  cursor: pointer; transition: all .15s; border-radius: 2px;
+  font-family: inherit;
+}
+.race-sort-btn:hover { border-color: var(--concrete); color: var(--concrete); }
+.race-sort-btn.active { background: var(--gold); color: var(--ground); border-color: var(--gold); }
+.race-rules { font-size: 12px; color: var(--muted); opacity: .85; line-height: 1.5; margin-bottom: 20px; }
+.race-league { margin-bottom: 26px; }
+.race-league-head {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+  font-size: 12px; font-weight: bold; letter-spacing: .16em; color: var(--muted);
+}
+.race-league-head .league-badge { margin-left: 0; }
+table.race { width: 100%; border-collapse: collapse; table-layout: fixed; }
+table.race th, table.race td {
+  padding: 6px 6px; text-align: left; white-space: nowrap;
+  font-size: 13px; border-bottom: 1px solid rgba(242,237,227,.10);
+}
+table.race th {
+  font-size: 11px; font-weight: bold; letter-spacing: .14em; color: var(--muted);
+}
+table.race .r-rank { width: 24px; text-align: center; padding-left: 3px; padding-right: 3px; color: var(--muted); font-size: 12px; }
+table.race .r-name { overflow: hidden; text-overflow: ellipsis; font-weight: bold; }
+table.race .r-back { width: 64px; text-align: right; color: var(--muted); }
+table.race .r-back.lead { color: var(--concrete); font-weight: bold; }
+table.race .r-rec { width: 52px; color: var(--muted); }
+table.race .r-odds { width: 56px; text-align: right; font-weight: bold; }
+table.race th.r-back, table.race th.r-odds { text-align: right; }
+table.race .team-link {
+  color: var(--concrete); cursor: pointer;
+  border-bottom: 1px solid rgba(242,237,227,.25);
+}
+table.race .team-link:hover { border-bottom-color: var(--gold); }
+table.race tbody tr:hover td { background: var(--ground-up); }
+table.race tr.in-pts .r-rank { box-shadow: inset 3px 0 0 var(--gold); }
+table.race tr.in-rec .r-rank { box-shadow: inset 3px 0 0 var(--spill-out); }
+.odds-hi { color: var(--gold); }
+.odds-lo { color: var(--muted); opacity: .75; font-weight: normal; }
+.race-note { font-size: 11px; color: var(--muted); opacity: .75; line-height: 1.55; margin-top: 4px; }
+.race-key { display: inline-block; width: 3px; height: 10px; margin: 0 5px 0 2px; vertical-align: -1px; }
+  
 /* ---- rules ---- */
 .rules-section { margin-bottom: 28px; }
 .rules-section h3 {
@@ -676,6 +729,7 @@ const CONFIG = {
   _appData = data;
   renderStandings(data);
   renderLive(data);
+  renderRace(data);
 
   // last updated
   if (data.lastUpdated) {
@@ -790,7 +844,7 @@ function renderStandings(data) {
       html += `<td class="col-record">${t.record.wins}\u2013${t.record.losses}</td>`;
       for (let w = completedWeeks - 1; w >= 0; w--) {
         const score = t.scores[w] || 0;
-       const isHigh = score === weekHighs[w] && score > 0;
+        const isHigh = score === weekHighs[w] && score > 0 && !(weekIsLive && w === completedWeeks - 1);
         const isLow = weekLows[w] !== null && score === weekLows[w];
         html += `<td class="col-week clickable${isHigh ? " week-high" : ""}${isLow ? " week-low" : ""}" onclick="openRoster('${t.leagueId}',${t.rosterId},${w})">${score.toFixed(1)}</td>`;
       }
@@ -810,6 +864,89 @@ function renderStandings(data) {
     });
   }
   draw();
+}
+/* ---- playoff race ----
+   Everything here is FINALIZED weeks only (scores.json `race`), so points back,
+   W/L and odds all describe the same moment and only move when a week ends. */
+let raceSort = 'odds';
+ 
+function setRaceSort(s) { raceSort = s; if (_appData) renderRace(_appData); }
+ 
+function fmtOdds(p, isFinal) {
+  if (isFinal) return p >= 0.5 ? "IN" : "OUT";
+  if (p < 0.01) return "<1%";
+  if (p > 0.99) return ">99%";
+  return Math.round(p * 100) + "%";
+}
+ 
+function renderRace(data) {
+  const race = data.race;
+  if (!race || !race.finalWeeks) return;
+  const box = document.getElementById("playoffs-content");
+  if (!box) return;
+ 
+  const isFinal = race.remainingWeeks === 0;
+  const teams = data.teams.filter(t => t.race);
+  if (teams.length === 0) return;
+ 
+  const sortLabels = { odds: "ODDS", points: "POINTS", record: "RECORD" };
+  let html = `<div class="race-top"><div class="race-title">PLAYOFF RACE<span class="race-through">THROUGH WEEK ${race.finalWeeks}</span></div>`;
+  html += `<div class="sort-bar">`;
+  Object.keys(sortLabels).forEach(k => {
+    html += `<button class="race-sort-btn${raceSort === k ? " active" : ""}" onclick="setRaceSort('${k}')">${sortLabels[k]}</button>`;
+  });
+  html += `</div></div>`;
+  html += `<p class="race-rules">Top 2 in points advance, then the next 2 by record among everyone else. Record ties break on points.</p>`;
+ 
+  const winsOf = r => r.w + 0.5 * r.t;
+  const byRecord = (a, b) => (winsOf(b.race) - winsOf(a.race)) || (b.race.pts - a.race.pts);
+ 
+  data.leagues.forEach((lg, li) => {
+    const lt = teams.filter(t => t.leagueIdx === li);
+    if (lt.length === 0) return;
+ 
+    // who is in a qualifying spot right now (same rules as the real cut)
+    const byPts = [...lt].sort((a, b) => b.race.pts - a.race.pts);
+    const leaderPts = byPts[0].race.pts;
+    const slot = new Map();
+    byPts.slice(0, 2).forEach(t => slot.set(t.rosterId, "pts"));
+    byPts.slice(2).sort(byRecord).slice(0, 2).forEach(t => slot.set(t.rosterId, "rec"));
+ 
+    const sorted = [...lt];
+    if (raceSort === "points") sorted.sort((a, b) => b.race.pts - a.race.pts);
+    else if (raceSort === "record") sorted.sort(byRecord);
+    else sorted.sort((a, b) => (b.race.odds - a.race.odds) || (b.race.pts - a.race.pts));
+ 
+    html += `<div class="race-league"><div class="race-league-head"><span class="league-badge ${CONFIG.leagueColors[li] || "league-0"}">L${li + 1}</span>${(lg.name || "League " + (li + 1)).toUpperCase()}</div>`;
+    html += `<table class="race"><thead><tr><th class="r-rank">#</th><th class="r-name">TEAM</th><th class="r-back">PTS</th><th class="r-rec">W/L</th><th class="r-odds">${isFinal ? "" : "ODDS"}</th></tr></thead><tbody>`;
+    sorted.forEach((t, i) => {
+      const r = t.race;
+      const lead = r.pts === leaderPts;
+      const back = lead ? r.pts.toFixed(1) : "−" + (leaderPts - r.pts).toFixed(1);
+      const cls = slot.get(t.rosterId) ? ` in-${slot.get(t.rosterId)}` : "";
+      const oddsCls = isFinal ? (r.odds >= 0.5 ? "odds-hi" : "odds-lo") : (r.odds >= 0.5 ? "odds-hi" : (r.odds < 0.1 ? "odds-lo" : ""));
+      const rec = r.w + "–" + r.l + (r.t ? "–" + r.t : "");
+      html += `<tr class="${cls.trim()}"><td class="r-rank">${i + 1}</td>`;
+      html += `<td class="r-name"><span class="team-link" onclick="openRoster('${t.leagueId}',${t.rosterId},${race.finalWeeks - 1})">${t.name}</span></td>`;
+      html += `<td class="r-back${lead ? " lead" : ""}">${back}</td>`;
+      html += `<td class="r-rec">${rec}</td>`;
+      html += `<td class="r-odds ${oddsCls}">${fmtOdds(r.odds, isFinal)}</td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+  });
+ 
+  html += `<p class="race-note"><span class="race-key" style="background:var(--gold)"></span>in a spot on points right now &nbsp; <span class="race-key" style="background:var(--spill-out)"></span>in a spot on record right now</p>`;
+  if (!isFinal) {
+    html += `<p class="race-note">Odds come from ${race.sims.toLocaleString("en-US")} simulations of the rest of the schedule, based on how each team has scored so far. They update when a week is final.</p>`;
+    if (race.finalWeeks <= 4) {
+      html += `<p class="race-note">Early in the season these lean on the league average, so expect them to move a lot.</p>`;
+    }
+    const liveWeek = data.currentWeek > race.finalWeeks && data.teams.some(t => (t.scores[data.currentWeek - 1] || 0) > 0);
+    if (liveWeek) {
+      html += `<p class="race-note">Week ${data.currentWeek} is in progress. It counts here once it is final.</p>`;
+    }
+  }
+  box.innerHTML = html;
 }
 
 /* ---- live ---- */
