@@ -281,10 +281,6 @@ section + section { border-top: none; }
   letter-spacing: .04em;
 }
 /* ---- playoff race ---- */
-.race-top {
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 8px; margin-bottom: 8px;
-}
 .race-title { font-size: 14px; font-weight: bold; letter-spacing: .14em; }
 .race-title .race-through {
   color: var(--muted); opacity: .7; margin-left: 8px;
@@ -296,14 +292,6 @@ section + section { border-top: none; }
   letter-spacing: .08em; padding: 5px 10px;
   cursor: pointer; transition: all .15s; border-radius: 2px;
   font-family: inherit;
-}
-.race-sort-btn:hover { border-color: var(--concrete); color: var(--concrete); }
-.race-sort-btn.active { background: var(--gold); color: var(--ground); border-color: var(--gold); }
-.race-rules { font-size: 12px; color: var(--muted); opacity: .85; line-height: 1.5; margin-bottom: 20px; }
-.race-league { margin-bottom: 26px; }
-.race-league-head {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
-  font-size: 12px; font-weight: bold; letter-spacing: .16em; color: var(--muted);
 }
 .race-league-head .league-badge { margin-left: 0; }
 table.race { width: 100%; border-collapse: collapse; table-layout: fixed; }
@@ -319,6 +307,7 @@ table.race .r-name { overflow: hidden; text-overflow: ellipsis; font-weight: bol
 table.race .r-back { width: 64px; text-align: right; color: var(--muted); }
 table.race .r-back.lead { color: var(--concrete); font-weight: bold; }
 table.race .r-rec { width: 52px; color: var(--muted); }
+table.race .r-rec.lead { color: var(--concrete); font-weight: bold; }  
 table.race .r-odds { width: 56px; text-align: right; font-weight: bold; }
 table.race th.r-back, table.race th.r-odds { text-align: right; }
 table.race .team-link {
@@ -578,8 +567,12 @@ footer {
 <section id="playoffs">
   <div class="wrap">
     <div class="sec-head">
-      <h2>PLAYOFFS</h2>
-      <div class="sub">WEEKS 15 TO 17</div>
+      <div class="sec-head-title-row">
+        <h2>PLAYOFF RACE</h2>
+      </div>
+      <div class="sec-head-row">
+        <div class="sub" id="race-sub">PLAYOFFS START WEEK 15</div>
+      </div>
     </div>
     <div id="playoffs-content">
       <div class="empty">
@@ -776,11 +769,12 @@ function renderStandings(data) {
 
   const filtered = standingsFilter === 'all' ? allTeams : allTeams.filter(t => String(t.leagueIdx) === standingsFilter);
 
-  // find week highs across ALL teams (not just filtered) for gold highlights
+ // week highs for the gold highlight. Uses `filtered`, so with no league
+  // filter it is the overall high, and with L1/L2 selected it is that league's.
   const weekHighs = [];
   for (let w = 0; w < completedWeeks; w++) {
     let high = 0;
-    allTeams.forEach(t => { if (t.scores[w] > high) high = t.scores[w]; });
+    filtered.forEach(t => { if (t.scores[w] > high) high = t.scores[w]; });
     weekHighs.push(high);
   }
  // lowest score per week across ALL teams, for the brown highlight.
@@ -790,7 +784,7 @@ function renderStandings(data) {
   for (let w = 0; w < completedWeeks; w++) {
     if (weekIsLive && w === completedWeeks - 1) { weekLows.push(null); continue; }
     let low = Infinity;
-    allTeams.forEach(t => { const s = t.scores[w] || 0; if (s < low) low = s; });
+    filtered.forEach(t => { const s = t.scores[w] || 0; if (s < low) low = s; });
     weekLows.push(low);
   }
   let currentSort = "cumulative";
@@ -868,10 +862,6 @@ function renderStandings(data) {
 /* ---- playoff race ----
    Everything here is FINALIZED weeks only (scores.json `race`), so points back,
    W/L and odds all describe the same moment and only move when a week ends. */
-let raceSort = 'odds';
- 
-function setRaceSort(s) { raceSort = s; if (_appData) renderRace(_appData); }
- 
 function fmtOdds(p, isFinal) {
   if (isFinal) return p >= 0.5 ? "IN" : "OUT";
   if (p < 0.01) return "<1%";
@@ -889,14 +879,9 @@ function renderRace(data) {
   const teams = data.teams.filter(t => t.race);
   if (teams.length === 0) return;
  
-  const sortLabels = { odds: "ODDS", points: "POINTS", record: "RECORD" };
-  let html = `<div class="race-top"><div class="race-title">PLAYOFF RACE<span class="race-through">THROUGH WEEK ${race.finalWeeks}</span></div>`;
-  html += `<div class="sort-bar">`;
-  Object.keys(sortLabels).forEach(k => {
-    html += `<button class="race-sort-btn${raceSort === k ? " active" : ""}" onclick="setRaceSort('${k}')">${sortLabels[k]}</button>`;
-  });
-  html += `</div></div>`;
-  html += `<p class="race-rules">Top 2 in points advance, then the next 2 by record among everyone else. Record ties break on points.</p>`;
+  const sub = document.getElementById("race-sub");
+  if (sub) sub.textContent = "THROUGH WEEK " + race.finalWeeks;
+  let html = `<p class="race-rules">Playoffs start Week 15. Top 2 in points advance, then the next 2 by record, with points as the tiebreaker.</p>`;
  
   const winsOf = r => r.w + 0.5 * r.t;
   const byRecord = (a, b) => (winsOf(b.race) - winsOf(a.race)) || (b.race.pts - a.race.pts);
@@ -908,16 +893,14 @@ function renderRace(data) {
     // who is in a qualifying spot right now (same rules as the real cut)
     const byPts = [...lt].sort((a, b) => b.race.pts - a.race.pts);
     const leaderPts = byPts[0].race.pts;
+    const bestWins = Math.max(...lt.map(t => winsOf(t.race))); // most wins in this league (ties all count)
     const slot = new Map();
     byPts.slice(0, 2).forEach(t => slot.set(t.rosterId, "pts"));
     byPts.slice(2).sort(byRecord).slice(0, 2).forEach(t => slot.set(t.rosterId, "rec"));
  
-    const sorted = [...lt];
-    if (raceSort === "points") sorted.sort((a, b) => b.race.pts - a.race.pts);
-    else if (raceSort === "record") sorted.sort(byRecord);
-    else sorted.sort((a, b) => (b.race.odds - a.race.odds) || (b.race.pts - a.race.pts));
+    const sorted = [...lt].sort((a, b) => (b.race.odds - a.race.odds) || (b.race.pts - a.race.pts));
  
-    html += `<div class="race-league"><div class="race-league-head"><span class="league-badge ${CONFIG.leagueColors[li] || "league-0"}">L${li + 1}</span>${(lg.name || "League " + (li + 1)).toUpperCase()}</div>`;
+    html += `<div class="race-league"><div class="race-league-head">${(lg.name || "League " + (li + 1)).toUpperCase()}</div>`;
     html += `<table class="race"><thead><tr><th class="r-rank">#</th><th class="r-name">TEAM</th><th class="r-back">PTS</th><th class="r-rec">W/L</th><th class="r-odds">${isFinal ? "" : "ODDS"}</th></tr></thead><tbody>`;
     sorted.forEach((t, i) => {
       const r = t.race;
@@ -929,26 +912,16 @@ function renderRace(data) {
       html += `<tr class="${cls.trim()}"><td class="r-rank">${i + 1}</td>`;
       html += `<td class="r-name"><span class="team-link" onclick="openRoster('${t.leagueId}',${t.rosterId},${race.finalWeeks - 1})">${t.name}</span></td>`;
       html += `<td class="r-back${lead ? " lead" : ""}">${back}</td>`;
-      html += `<td class="r-rec">${rec}</td>`;
+      html += `<td class="r-rec${winsOf(r) === bestWins ? " lead" : ""}">${rec}</td>`;
       html += `<td class="r-odds ${oddsCls}">${fmtOdds(r.odds, isFinal)}</td></tr>`;
     });
     html += `</tbody></table></div>`;
   });
  
   html += `<p class="race-note"><span class="race-key" style="background:var(--gold)"></span>in a spot on points right now &nbsp; <span class="race-key" style="background:var(--spill-out)"></span>in a spot on record right now</p>`;
-  if (!isFinal) {
-    html += `<p class="race-note">Odds come from ${race.sims.toLocaleString("en-US")} simulations of the rest of the schedule, based on how each team has scored so far. They update when a week is final.</p>`;
-    if (race.finalWeeks <= 4) {
-      html += `<p class="race-note">Early in the season these lean on the league average, so expect them to move a lot.</p>`;
-    }
-    const liveWeek = data.currentWeek > race.finalWeeks && data.teams.some(t => (t.scores[data.currentWeek - 1] || 0) > 0);
-    if (liveWeek) {
-      html += `<p class="race-note">Week ${data.currentWeek} is in progress. It counts here once it is final.</p>`;
-    }
-  }
+  if (!isFinal) html += `<p class="race-note">Updates when each week finalizes after MNF.</p>`;
   box.innerHTML = html;
 }
-
 /* ---- live ---- */
 let liveFilter = 'all';
 
