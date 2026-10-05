@@ -210,6 +210,7 @@ section + section { border-top: none; }
 .standings .col-week { color: var(--muted); font-size: 13px; text-align: right; width: 44px; padding-left: 3px; padding-right: 9px; }
 .standings th.col-week { text-align: right; }
 .standings .week-high { color: var(--gold); font-weight: bold; }
+  .standings .week-low { color: #A67C52; font-weight: bold; }
 
 /* advancing teams highlight */
 .standings tr.advancing td { border-left: none; }
@@ -704,12 +705,14 @@ function renderStandings(data) {
   // real schedule (latest kickoff of the week + a game-length buffer) for
   // that instead.
   const currentWeekHasScores = weeks > 0 && allTeams.some(t => (t.scores[weeks - 1] || 0) > 0);
-  const completedWeeks = currentWeekHasScores && data.weekConcluded ? weeks : weeks - 1;
+  const completedWeeks = currentWeekHasScores ? weeks : weeks - 1;
+  const weekIsLive = currentWeekHasScores && !data.weekConcluded;
 
   if (completedWeeks < 1) return;
 
-  document.getElementById("standings-sub").textContent =
-    "THROUGH WEEK " + completedWeeks;
+   document.getElementById("standings-sub").innerHTML =
+    "THROUGH WEEK " + completedWeeks +
+    (weekIsLive ? ' <span style="color:var(--gold)">LIVE</span>' : "");
   document.getElementById("standings-controls").style.display = "";
   document.getElementById("standings-league-filter").style.display = "";
   
@@ -726,7 +729,16 @@ function renderStandings(data) {
     allTeams.forEach(t => { if (t.scores[w] > high) high = t.scores[w]; });
     weekHighs.push(high);
   }
-
+ // lowest score per week across ALL teams, for the brown highlight.
+  // Skipped for the live week: mid-week the "lowest" is just whoever
+  // hasn't played yet, which means nothing until the week is final.
+  const weekLows = [];
+  for (let w = 0; w < completedWeeks; w++) {
+    if (weekIsLive && w === completedWeeks - 1) { weekLows.push(null); continue; }
+    let low = Infinity;
+    allTeams.forEach(t => { const s = t.scores[w] || 0; if (s < low) low = s; });
+    weekLows.push(low);
+  }
   let currentSort = "cumulative";
   const sortBtns = document.querySelectorAll(".sort-btn");
   sortBtns.forEach(btn => btn.addEventListener("click", () => {
@@ -778,8 +790,9 @@ function renderStandings(data) {
       html += `<td class="col-record">${t.record.wins}\u2013${t.record.losses}</td>`;
       for (let w = completedWeeks - 1; w >= 0; w--) {
         const score = t.scores[w] || 0;
-        const isHigh = score === weekHighs[w] && score > 0;
-        html += `<td class="col-week clickable${isHigh ? " week-high" : ""}" onclick="openRoster('${t.leagueId}',${t.rosterId},${w})">${score.toFixed(1)}</td>`;
+       const isHigh = score === weekHighs[w] && score > 0;
+        const isLow = weekLows[w] !== null && score === weekLows[w];
+        html += `<td class="col-week clickable${isHigh ? " week-high" : ""}${isLow ? " week-low" : ""}" onclick="openRoster('${t.leagueId}',${t.rosterId},${w})">${score.toFixed(1)}</td>`;
       }
       html += '</tr>';
     });
