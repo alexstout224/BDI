@@ -937,8 +937,7 @@ function renderRace(data) {
     html += `</tbody></table></div>`;
   });
  
-  html += `<p class="race-note"><span class="race-key" style="background:var(--gold)"></span>in on points &nbsp; <span class="race-key" style="background:var(--spill-out)"></span>in on record /p>`;
-  if (!isFinal) html += `<p class="race-note">Updates when each week finalizes after MNF.</p>`;
+  html += `<p class="race-note"><span class="race-key" style="background:var(--gold)"></span>in on points &nbsp; <span class="race-key" style="background:var(--spill-out)"></span>in on record</p>`;  if (!isFinal) html += `<p class="race-note">Updates when each week finalizes after MNF.</p>`;
   box.innerHTML = html;
 }
 /* ---- live ---- */
