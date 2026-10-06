@@ -310,9 +310,11 @@ table.race th {
 }
 table.race .r-rank { width: 24px; text-align: center; padding-left: 3px; padding-right: 3px; color: var(--muted); font-size: 12px; }
 table.race .r-name { overflow: hidden; text-overflow: ellipsis; font-weight: bold; }
-table.race .r-back { width: 64px; text-align: right; color: var(--muted); }
+table.race .r-back { width: 98px; text-align: right; color: var(--concrete); white-space: nowrap; }
+table.race .gap { color: var(--muted); font-size: 10.5px; font-weight: normal; }
 table.race .r-back.lead { color: var(--concrete); font-weight: bold; }
-table.race .r-rec { width: 52px; text-align: right; color: var(--muted); }
+table.race .r-rec { width: 50px; text-align: right; color: var(--concrete); white-space: nowrap; }
+table.race .r-odds { width: 46px; text-align: right; font-weight: bold; }
 table.race .r-rec.lead { color: var(--concrete); font-weight: bold; }  
 table.race .r-odds { width: 56px; text-align: right; font-weight: bold; }
 table.race th.r-back, table.race th.r-rec, table.race th.r-odds { text-align: right; }
@@ -911,7 +913,7 @@ function renderRace(data) {
     sorted.forEach((t, i) => {
       const r = t.race;
       const lead = r.pts === leaderPts;
-      const back = lead ? r.pts.toFixed(1) : "−" + (leaderPts - r.pts).toFixed(1);
+      const back = lead ? r.pts.toFixed(1) : r.pts.toFixed(1) + ' <span class="gap">(\u2212' + (leaderPts - r.pts).toFixed(1) + ')</span>';
       const cls = slot.get(t.rosterId) ? ` in-${slot.get(t.rosterId)}` : "";
       const oddsCls = isFinal ? (r.odds >= 0.5 ? "odds-hi" : "odds-lo") : (r.odds >= 0.5 ? "odds-hi" : (r.odds < 0.1 ? "odds-lo" : ""));
       const rec = r.w + "–" + r.l + (r.t ? "–" + r.t : "");
@@ -922,7 +924,7 @@ function renderRace(data) {
       // total, everyone else shows how many wins back (−1, −2, ...)
       const fw = n => (Number.isInteger(n) ? String(n) : n.toFixed(1));
       const winsLead = winsOf(r) === bestWins;
-      html += `<td class="r-rec${winsLead ? " lead" : ""}">${winsLead ? fw(winsOf(r)) : "\u2212" + fw(bestWins - winsOf(r))}</td>`;
+      html += `<td class="r-rec${winsLead ? " lead" : ""}">${winsLead ? fw(winsOf(r)) : fw(winsOf(r)) + ' <span class="gap">(\u2212' + fw(bestWins - winsOf(r)) + ')</span>'}</td>`;
       html += `<td class="r-odds ${oddsCls}">${fmtOdds(r.odds, isFinal)}</td></tr>`;
     });
     html += `</tbody></table></div>`;
