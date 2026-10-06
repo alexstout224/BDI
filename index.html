@@ -311,8 +311,8 @@ table.race th {
 table.race .r-rank { width: 24px; text-align: center; padding-left: 3px; padding-right: 3px; color: var(--muted); font-size: 12px; }
 table.race .r-name { overflow: hidden; text-overflow: ellipsis; font-weight: bold; }
 table.race .r-back { width: 104px; text-align: right; color: var(--concrete); white-space: nowrap; }
-table.race .n { display: inline-block; text-align: right; }
-table.race .gap { display: inline-block; text-align: right; margin-left: 3px; color: var(--muted); font-size: 10.5px; font-weight: normal; }
+table.race .n { display: inline-block; text-align: left; }
+table.race .gap { display: inline-block; text-align: left; margin-left: 3px; color: var(--muted); font-size: 10.5px; font-weight: normal; }
 table.race .r-back .n { min-width: 42px; }
 table.race .r-back .gap { min-width: 50px; }
 table.race .r-rec .n { min-width: 10px; }
@@ -324,6 +324,7 @@ table.race .r-rec.lead { color: var(--concrete); font-weight: bold; }
 table.race .r-odds { width: 56px; text-align: right; font-weight: bold; }
 table.race th.r-odds { text-align: right; }
 table.race th.r-back, table.race th.r-rec { text-align: left; }
+table.race td.r-back, table.race td.r-rec { text-align: left; }
 table.race .team-link {
   color: var(--concrete); cursor: pointer;
   border-bottom: 1px solid rgba(242,237,227,.25);
@@ -915,7 +916,7 @@ function renderRace(data) {
     const sorted = [...lt].sort((a, b) => (b.race.odds - a.race.odds) || (b.race.pts - a.race.pts));
  
     html += `<div class="race-league"><div class="race-league-head">${(lg.name || "League " + (li + 1)).toUpperCase()}</div>`;
-    html += `<table class="race"><thead><tr><th class="r-rank">#</th><th class="r-name">TEAM</th><th class="r-back">PTS</th><th class="r-rec">WINS</th><th class="r-odds">${isFinal ? "" : "ODDS"}</th></tr></thead><tbody>`;
+    html += `<table class="race"><thead><tr><th class="r-rank">#</th><th class="r-name">TEAM</th><th class="r-back">POINTS</th><th class="r-rec">WINS</th><th class="r-odds">${isFinal ? "" : "ODDS"}</th></tr></thead><tbody>`;
     sorted.forEach((t, i) => {
       const r = t.race;
       const lead = r.pts === leaderPts;
