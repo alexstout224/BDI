@@ -1,27 +1,11 @@
 name: Fetch Scores
 
 on:
-  schedule:
-    # Sunday games (1pm ET = 17:00 UTC through midnight)
-    - cron: '*/10 17-23 * * 0'
-    # Sunday late / SNF overflow (midnight-4am ET Monday = 04:00 UTC)
-    - cron: '*/10 0-4 * * 1'
-    # Monday Night Football (8pm ET = 00:00 UTC Tuesday)
-    - cron: '*/10 0-4 * * 2'
-    # Thursday Night Football (8pm ET = 00:00 UTC Friday)
-    - cron: '*/10 0-4 * * 5'
-    # Wednesday opener Week 1 (Sep 9 2026, 8pm ET = 00:00 UTC Thu)
-    - cron: '*/10 0-4 * * 4'
-    # Saturday late-season games
-    - cron: '*/10 17-23 * * 6'
-    - cron: '*/10 0-4 * * 0'
-    # Daily morning sync (6am ET = 10:00 UTC)
-    - cron: '0 10 * * *'
-      # Sunday early/international games (7am-1pm ET = 11:00-16:59 UTC) 
-    - cron: '*/10 11-16 * * 0'                                          
-
-  # Manual trigger from GitHub UI
   workflow_dispatch:
+
+concurrency:
+  group: fetch-scores
+  cancel-in-progress: false
 
 jobs:
   fetch:
