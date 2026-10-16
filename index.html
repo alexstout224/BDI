@@ -319,7 +319,7 @@ table.race .r-rec .n { min-width: 10px; }
 table.race .r-rec .gap { min-width: 24px; }
 table.race .r-back.lead { color: var(--concrete); font-weight: bold; }
 table.race .r-rec { width: 50px; text-align: right; color: var(--concrete); white-space: nowrap; }
-table.race .r-odds { width: 62px; white-space: nowrap; text-align: right; font-weight: bold; }
+table.race .r-odds { width: 64px; white-space: nowrap; text-align: right; font-weight: bold; }
 table.race .r-rec.lead { color: var(--concrete); font-weight: bold; }  
 table.race th.r-odds { text-align: right; }
 table.race th.r-back, table.race th.r-rec { text-align: left; }
@@ -368,9 +368,8 @@ table.race tr.in-rec .r-rank { box-shadow: inset 3px 0 0 var(--spill-out); }
   color-scheme: dark;
 }
 .race-select:hover { border-color: var(--concrete); }
-table.race .od-d { font-size: 9px; font-weight: bold; margin-right: 3px; }
-table.race .od-d.up { color: #2DA078; }
-table.race .od-d.dn { color: var(--red); }
+table.race .od-p { display: inline-block; min-width: 30px; text-align: right; }
+table.race .od-d { display: inline-block; min-width: 20px; text-align: left; margin-left: 2px; font-size: 9px; font-weight: bold; color: var(--muted); }
 /* ---- league filter ---- */
 .league-filter {
   display: inline-flex; gap: 4px; margin-left: 12px; vertical-align: middle;
@@ -976,7 +975,7 @@ function renderRace(data) {
       const oddsCls = isFinal ? (r.odds >= 0.5 ? "odds-hi" : "odds-lo") : (r.odds >= 0.5 ? "odds-hi" : (r.odds < 0.1 ? "odds-lo" : ""));
  
       // change in odds vs the previous week (percentage points, same rounding as shown)
-      let delta = "";
+      let delta = (prevWeek && !isFinal) ? '<span class="od-d"></span>' : ""; // empty slot keeps every % lined up
       const pr = prevWeek && prevWeek[keyOf(t)];
       if (!isFinal && pr) {
         const d = Math.round(r.odds * 100) - Math.round(pr.odds * 100);
@@ -991,7 +990,7 @@ function renderRace(data) {
       const fw = n => (Number.isInteger(n) ? String(n) : n.toFixed(1));
       const winsLead = winsOf(r) === bestWins;
       html += `<td class="r-rec${winsLead ? " lead" : ""}"><span class="n">${fw(winsOf(r))}</span><span class="gap">${winsLead ? "" : "(\u2212" + fw(bestWins - winsOf(r)) + ")"}</span></td>`;
-      html += `<td class="r-odds">${delta}<span class="${oddsCls}">${fmtOdds(r.odds, isFinal)}</span></td></tr>`;
+      html += `<td class="r-odds"><span class="od-p ${oddsCls}">${fmtOdds(r.odds, isFinal)}</span>${delta}</td></tr>`;
     });
     html += `</tbody></table></div>`;
   });
