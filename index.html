@@ -176,8 +176,8 @@ section + section { border-top: none; }
 .standings .col-name {
   position: sticky; z-index: 3; background: var(--ground);
 }
-.standings .col-rank { left: 0; width: 18px; text-align: center; padding-left: 3px; padding-right: 3px; }
-.standings .col-name { left: 22px; width: 130px; padding-left: 6px; overflow: hidden; text-overflow: ellipsis; }
+.standings .col-rank { left: -20; width: 18px; text-align: center; padding-left: 3px; padding-right: 3px; }
+.standings .col-name { left: -2px; width: 130px; padding-left: 6px; overflow: hidden; text-overflow: ellipsis; }
 /* sticky headers need higher z than sticky cells */
 .standings thead .col-rank,
 .standings thead .col-name { z-index: 5; }
@@ -319,7 +319,7 @@ table.race .r-rec .n { min-width: 10px; }
 table.race .r-rec .gap { min-width: 24px; }
 table.race .r-back.lead { color: var(--concrete); font-weight: bold; }
 table.race .r-rec { width: 50px; text-align: right; color: var(--concrete); white-space: nowrap; }
-table.race .r-odds { width: 46px; text-align: right; font-weight: bold; }
+table.race .r-odds { width: 62px; white-space: nowrap; text-align: right; font-weight: bold; }
 table.race .r-rec.lead { color: var(--concrete); font-weight: bold; }  
 table.race .r-odds { width: 56px; text-align: right; font-weight: bold; }
 table.race th.r-odds { text-align: right; }
@@ -361,19 +361,17 @@ table.race tr.in-rec .r-rank { box-shadow: inset 3px 0 0 var(--spill-out); }
 }
 .rules-section li b { color: var(--gold); font-weight: bold; }
 
-/* ---- playoff race: week selector + odds change ---- */
-.race-weeks { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px; margin: 4px 0 14px; }
-.race-weeks .lbl { font-size: 9px; font-weight: bold; letter-spacing: .12em; color: var(--muted); margin-right: 4px; }
-.race-wk {
+/* ---- playoff race: week dropdown + odds change ---- */
+.race-select {
   font-family: inherit; font-size: 10px; font-weight: bold; letter-spacing: .08em;
-  min-width: 32px; padding: 5px 9px; border-radius: 2px;
-  border: 1px solid rgba(242,237,227,.18); background: transparent;
-  color: var(--muted); cursor: pointer; transition: all .15s;
+  padding: 5px 8px; border-radius: 2px; cursor: pointer;
+  border: 1px solid rgba(242,237,227,.18); background: var(--ground); color: var(--concrete);
+  color-scheme: dark;
 }
-.race-wk:hover { border-color: var(--concrete); color: var(--concrete); }
-.race-wk.active { background: var(--gold); color: var(--ground); border-color: var(--gold); }
-table.race .od-d { display: block; font-size: 9px; font-weight: normal; color: var(--muted); line-height: 1; margin-top: 2px; }
-  
+.race-select:hover { border-color: var(--concrete); }
+table.race .od-d { font-size: 9px; font-weight: bold; margin-right: 3px; }
+table.race .od-d.up { color: #2DA078; }
+table.race .od-d.dn { color: var(--red); }
 /* ---- league filter ---- */
 .league-filter {
   display: inline-flex; gap: 4px; margin-left: 12px; vertical-align: middle;
@@ -603,6 +601,7 @@ footer {
     <div class="sec-head">
       <div class="sec-head-title-row">
         <h2>PLAYOFF RACE</h2>
+        <select id="race-week" class="race-select" style="display:none" onchange="setRaceWeek(+this.value)"></select>
       </div>
       <div class="sec-head-row">
         <div class="sub" id="race-sub">PLAYOFFS START WEEK 15</div>
@@ -902,11 +901,11 @@ function fmtOdds(p, isFinal) {
   if (p > 0.99) return ">99%";
   return Math.round(p * 100) + "%";
 }
- 
-let raceWeek = null; // week picked in the selector; null = latest finalized week
+ let raceWeek = null; // week picked in the selector; null = latest finalized week
  
 function setRaceWeek(w) {
-  raceWeek = w;
+  // picking the latest week means "follow the latest" (so it moves on when a new week finalizes)
+  raceWeek = (_appData && _appData.race && w === _appData.race.finalWeeks) ? null : w;
   if (_appData) renderRace(_appData);
 }
  
@@ -934,12 +933,20 @@ function renderRace(data) {
   if (sub) sub.textContent = "THROUGH WEEK " + week;
   let html = `<p class="race-rules">Playoffs start Week 15. Top 2 in points advance, then the next 2 by record, with points as the tiebreaker.</p>`;
  
-  if (histWeeks.length > 1) {
-    html += `<div class="race-weeks"><span class="lbl">WEEK</span>`;
-    histWeeks.forEach(w => {
-      html += `<button class="race-wk${w === week ? " active" : ""}" onclick="setRaceWeek(${w})">${w}</button>`;
-    });
-    html += `</div>`;
+  // week picker (dropdown in the header next to the title); only shown once there is history
+  const picker = document.getElementById("race-week");
+  if (picker) {
+    if (histWeeks.length > 1) {
+      const sig = histWeeks.join(",");
+      if (picker.dataset.weeks !== sig) { // rebuild only when the list changes, so an open picker isn't disturbed
+        picker.innerHTML = histWeeks.map(w => `<option value="${w}">WEEK ${w}</option>`).join("");
+        picker.dataset.weeks = sig;
+      }
+      picker.value = String(week);
+      picker.style.display = "";
+    } else {
+      picker.style.display = "none";
+    }
   }
  
   const winsOf = r => r.w + 0.5 * r.t;
@@ -965,7 +972,7 @@ function renderRace(data) {
     sorted.forEach((t, i) => {
       const r = t.race;
       const lead = r.pts === leaderPts;
-      const back = '<span class="n">' + r.pts.toFixed(1) + '</span><span class="gap">' + (lead ? "" : "(−" + (leaderPts - r.pts).toFixed(1) + ")") + '</span>';
+      const back = '<span class="n">' + r.pts.toFixed(1) + '</span><span class="gap">' + (lead ? "" : "(\u2212" + (leaderPts - r.pts).toFixed(1) + ")") + '</span>';
       const cls = slot.get(t.rosterId) ? ` in-${slot.get(t.rosterId)}` : "";
       const oddsCls = isFinal ? (r.odds >= 0.5 ? "odds-hi" : "odds-lo") : (r.odds >= 0.5 ? "odds-hi" : (r.odds < 0.1 ? "odds-lo" : ""));
  
@@ -974,19 +981,18 @@ function renderRace(data) {
       const pr = prevWeek && prevWeek[keyOf(t)];
       if (!isFinal && pr) {
         const d = Math.round(r.odds * 100) - Math.round(pr.odds * 100);
-        // no change still gets an invisible line so every row keeps the same height
-        delta = `<span class="od-d">${d === 0 ? "&nbsp;" : (d > 0 ? "▲" : "▼") + Math.abs(d)}</span>`;
+        if (d !== 0) delta = `<span class="od-d ${d > 0 ? "up" : "dn"}">${d > 0 ? "\u25B2" : "\u25BC"}${Math.abs(d)}</span>`;
       }
  
       html += `<tr class="${cls.trim()}"><td class="r-rank">${i + 1}</td>`;
       html += `<td class="r-name"><span class="team-link" onclick="openRoster('${t.leagueId}',${t.rosterId},${week - 1})">${t.name}</span></td>`;
       html += `<td class="r-back${lead ? " lead" : ""}">${back}</td>`;
       // wins, shown like the POINTS column: everyone tied for the most wins shows their
-      // total, everyone else shows how many wins back (−1, −2, ...)
+      // total, everyone else shows how many wins back (\u22121, \u22122, ...)
       const fw = n => (Number.isInteger(n) ? String(n) : n.toFixed(1));
       const winsLead = winsOf(r) === bestWins;
-      html += `<td class="r-rec${winsLead ? " lead" : ""}"><span class="n">${fw(winsOf(r))}</span><span class="gap">${winsLead ? "" : "(−" + fw(bestWins - winsOf(r)) + ")"}</span></td>`;
-      html += `<td class="r-odds ${oddsCls}">${fmtOdds(r.odds, isFinal)}${delta}</td></tr>`;
+      html += `<td class="r-rec${winsLead ? " lead" : ""}"><span class="n">${fw(winsOf(r))}</span><span class="gap">${winsLead ? "" : "(\u2212" + fw(bestWins - winsOf(r)) + ")"}</span></td>`;
+      html += `<td class="r-odds">${delta}<span class="${oddsCls}">${fmtOdds(r.odds, isFinal)}</span></td></tr>`;
     });
     html += `</tbody></table></div>`;
   });
@@ -996,6 +1002,7 @@ function renderRace(data) {
   else if (!isFinal) html += `<p class="race-note">Updates when each week finalizes after MNF.</p>`;
   box.innerHTML = html;
 }
+
 /* ---- live ---- */
 let liveFilter = 'all';
 
