@@ -160,6 +160,7 @@ const REGULAR_SEASON_WEEKS = 14;
 const ADVANCE_BY_POINTS = 2;
 const ADVANCE_BY_RECORD = 2;
 const SIM_COUNT = 10000;
+const HISTORY_START_WEEK = 4; // first week whose odds are kept for the Playoff Race week selector
 
 // Small seeded PRNG so the same data always gives the same odds
 // (no jitter between runs or page loads).
@@ -295,7 +296,7 @@ function simulateLeague({ teams, remaining, model, n, seed, sims = SIM_COUNT }) 
 
 // Attaches team.race = { w, l, t, pts, odds, viaPts, viaRec } to every team and
 // returns league-wide metadata (or null if no week is final yet).
-function computePlayoffRace(allTeams, leaguePairings, finalWeeksRaw) {
+function computePlayoffRace(allTeams, leaguePairings, finalWeeksRaw, quiet = false) {
   const finalWeeks = Math.min(finalWeeksRaw, REGULAR_SEASON_WEEKS);
   if (finalWeeks < 1) return null;
 
@@ -335,7 +336,7 @@ function computePlayoffRace(allTeams, leaguePairings, finalWeeksRaw) {
       };
     });
     const total = results.reduce((a, r) => a + r.viaPts + r.viaRec, 0);
-    console.log(`  League ${li + 1} race: ${remaining.length} weeks left, odds sum ${total.toFixed(2)} (expect ${ADVANCE_BY_POINTS + ADVANCE_BY_RECORD})`);
+    if (!quiet) console.log(`  League ${li + 1} race: ${remaining.length} weeks left, odds sum ${total.toFixed(2)} (expect ${ADVANCE_BY_POINTS + ADVANCE_BY_RECORD})`);
   });
 
   return {
@@ -391,9 +392,11 @@ async function main() {
   // Future head-to-head pairings never change mid-season, so they're cached in
   // scores.json and only re-fetched once per NFL week instead of every run.
   let pairingsCache = { week: null, leagues: {} };
+  let prevHistory = {}; // odds from earlier finalized weeks: they never change, so reuse them
   try {
     const prev = JSON.parse(fs.readFileSync(OUT_PATH, 'utf8'));
     if (prev && prev.pairingsCache) pairingsCache = prev.pairingsCache;
+    if (prev && prev.raceHistory) prevHistory = prev.raceHistory;
   } catch (e) { /* first run or unreadable file: just fetch fresh */ }
 
   const allTeams = [];
@@ -471,6 +474,10 @@ async function main() {
         name: userMap[r.owner_id] || `Team ${r.roster_id}`,
         scores: wd.scores,
         rosters: wd.rosters,
+        opp: Array.from({ length: currentWeek }, (_, i) => {
+          const pair = (pairingsByWeek[i + 1] || []).find(p => p.includes(r.roster_id));
+          return pair ? (pair[0] === r.roster_id ? pair[1] : pair[0]) : null;
+        }), // opponent rosterId for each week so far (null = none)
         record: { wins: r.settings?.wins || 0, losses: r.settings?.losses || 0 },
         cumulative: Math.round(cumulative * 100) / 100,
         sleeperUrl: `https://sleeper.com/roster/${league.id}/${r.roster_id}`,
@@ -490,8 +497,26 @@ async function main() {
   // Weeks that count as final. Odds only update when a week finalizes.
   const finalWeeks = (hasCurrentWeekScores && weekConcluded) ? currentWeek : currentWeek - 1;
   let race = null;
+  const raceHistory = {};
   try {
-    race = computePlayoffRace(allTeams, leaguePairings, finalWeeks);
+    // Odds for every finalized week from HISTORY_START_WEEK on, for the week selector.
+    // Earlier weeks are reused from the last scores.json; only missing weeks are
+    // computed (the first run backfills). The latest week is recomputed every run so
+    // Tuesday stat corrections still show up.
+    const raceWeeks = Math.min(finalWeeks, REGULAR_SEASON_WEEKS);
+    const keyOf = t => `${t.leagueId}:${t.rosterId}`;
+    const snapshot = () => {
+      const o = {};
+      allTeams.forEach(t => { if (t.race) o[keyOf(t)] = { w: t.race.w, l: t.race.l, t: t.race.t, pts: t.race.pts, odds: t.race.odds }; });
+      return o;
+    };
+    for (let w = HISTORY_START_WEEK; w < raceWeeks; w++) {
+      if (prevHistory[w]) { raceHistory[w] = prevHistory[w]; continue; }
+      computePlayoffRace(allTeams, leaguePairings, w, true);
+      raceHistory[w] = snapshot();
+    }
+    race = computePlayoffRace(allTeams, leaguePairings, finalWeeks); // last, so team.race is the latest week
+    if (raceWeeks >= HISTORY_START_WEEK) raceHistory[raceWeeks] = snapshot();
   } catch (e) {
     // never let the odds break the score update
     console.warn('WARNING: playoff race calculation failed, continuing without it:', e.message);
@@ -512,6 +537,7 @@ async function main() {
     lastUpdated: new Date().toISOString(),
     leagues: leaguesMeta,
     race,
+    raceHistory,
     pairingsCache: newPairingsCache,
     teams: allTeams,
   };
