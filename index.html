@@ -280,6 +280,21 @@ section + section { border-top: none; }
   font-size: 13px; font-weight: bold; color: var(--gold);
   letter-spacing: .04em;
 }
+/* ---- playoffs table (weeks 15-17) ---- */
+table.po { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:24px; }
+table.po th, table.po td { padding:7px 6px; text-align:left; white-space:nowrap; font-size:13px; border-bottom:1px solid rgba(242,237,227,.10); }
+table.po th { font-size:11px; font-weight:bold; letter-spacing:.14em; color:var(--muted); }
+table.po .p-rank { width:24px; text-align:center; padding-left:3px; padding-right:3px; color:var(--muted); font-size:12px; }
+table.po .p-name { overflow:hidden; text-overflow:ellipsis; font-weight:bold; }
+table.po .p-name .league-badge { margin-left:6px; }
+table.po .p-wk { width:54px; text-align:right; }
+table.po td.p-wk { cursor:pointer; }
+table.po td.p-wk.cur { font-weight:bold; color:var(--gold); }
+table.po td.p-wk.live { font-style:italic; }
+table.po .p-pay { display:block; font-size:10px; font-weight:bold; color:var(--gold); margin-top:1px; }
+table.po tr.out td { opacity:.35; }
+table.po tr.cut td { border-bottom:1px dashed var(--gold); }
+.po-note { font-size:12px; color:var(--muted); opacity:.85; line-height:1.5; margin-bottom:14px; }
 /* ---- playoff race ---- */
 .race-rules { font-size: 12px; color: var(--muted); opacity: .85; line-height: 1.5; margin-bottom: 20px; }
 .race-league { margin-bottom: 26px; }
@@ -637,7 +652,7 @@ footer {
     <div id="playoffs-content">
       <div class="empty">
         <p class="big">Top 4 from each league advance after Week 14</p>
-        <p>The field halves after Weeks 15 and 16. Whoever survives plays the Week 17 championship.</p>
+        <p>Eight teams play Week 15 and the top five scores move on. The top three in Week 16 play for the title in Week 17.</p>
       </div>
     </div>
   </div>
@@ -692,8 +707,10 @@ footer {
       <h3><span class="num">05</span>PLAYOFFS <span class="when">WEEKS 15 TO 17</span></h3>
       <ul>
         <li><b>Every round starts from zero.</b> Points do not carry between weeks, and nothing from the regular season carries in.</li>
-        <li>Half the field is cut after Week 15 and half again after Week 16. The final round never drops below three teams.</li>
-        <li>Week 17 alone decides the championship.</li>
+        <li><b>Eight teams</b> start the playoffs, four from each league.</li>
+        <li><b>Week 15:</b> the top five scores advance. <b>Week 16:</b> the top three advance to the final.</li>
+        <li><b>Week 17 alone decides the championship.</b> Highest score wins, then second and third.</li>
+        <li>Playoff ties break by regular season total points.</li>
         <li>Standings go up after every playoff week so nobody has to take my word for it.</li>
       </ul>
     </div>
@@ -782,7 +799,7 @@ const CONFIG = {
   _appData = data;
   renderStandings(data);
   renderLive(data);
-  renderRace(data);
+  if (!renderPlayoffs(data)) renderRace(data);
 
   // last updated
   if (data.lastUpdated) {
@@ -933,9 +950,98 @@ function fmtOdds(p, isFinal) {
 function setRaceWeek(w) {
   // picking the latest week means "follow the latest" (so it moves on when a new week finalizes)
   raceWeek = (_appData && _appData.race && w === _appData.race.finalWeeks) ? null : w;
-  if (_appData) renderRace(_appData);
+  if (_appData && !renderPlayoffs(_appData)) renderRace(_appData);
 }
  
+/* ---- playoffs (weeks 15-17): 8 -> 5 -> 3, each week scored from zero ---- */
+function renderPlayoffs(data) {
+  const START = CONFIG.playoffStart, LAST = CONFIG.totalWeeks;
+  const CUTS = { 15: 5, 16: 3 };              // teams that survive each week
+  if (!data || data.currentWeek < START) return false;
+  const box = document.getElementById("playoffs-content");
+  if (!box) return false;
+
+  const hasScores = w => data.teams.some(t => (t.scores[w - 1] || 0) > 0);
+  const isFinal = w => w < data.currentWeek || (w === data.currentWeek && data.weekConcluded && hasScores(w));
+  const lastWeek = Math.min(data.currentWeek, LAST);
+  const regPts = t => t.scores.slice(0, CONFIG.regularSeasonWeeks).reduce((a, b) => a + (b || 0), 0);
+  const sc = (t, w) => t.scores[w - 1] || 0;
+
+  // who qualified: the week-14 race result (odds are 1 or 0 once the regular season is final)
+  let field = data.teams.filter(t => t.race && t.race.odds >= 0.5);
+  if (field.length !== CONFIG.advancePerLeague * data.leagues.length) {
+    // fallback: same rule computed here (top 2 points, then top 2 by record, points break ties)
+    field = [];
+    data.leagues.forEach(lg => {
+      const lt = data.teams.filter(t => t.leagueId === lg.id).map(t => {
+        let w = 0, ties = 0;
+        for (let i = 0; i < CONFIG.regularSeasonWeeks; i++) {
+          const o = data.teams.find(x => x.leagueId === lg.id && x.rosterId === (t.opp || [])[i]);
+          if (!o) continue;
+          if (sc(t, i + 1) > sc(o, i + 1)) w++; else if (sc(t, i + 1) === sc(o, i + 1)) ties++;
+        }
+        return { t, w: w + ties / 2, p: regPts(t) };
+      });
+      const byPts = [...lt].sort((a, b) => b.p - a.p);
+      const top = byPts.slice(0, 2);
+      const rest = byPts.slice(2).sort((a, b) => b.w - a.w || b.p - a.p).slice(0, 2);
+      [...top, ...rest].forEach(x => field.push(x.t));
+    });
+  }
+
+  // eliminations, week by week
+  const rows = field.map(t => ({ t, out: null, rp: regPts(t) }));
+  for (let w = START; w < LAST; w++) {
+    if (!isFinal(w)) break;
+    const alive = rows.filter(x => x.out == null)
+      .sort((a, b) => sc(b.t, w) - sc(a.t, w) || b.rp - a.rp);
+    alive.slice(CUTS[w]).forEach(x => { x.out = w; });
+  }
+  // sort: still alive first (by latest week), then the most recently eliminated
+  const keyWeek = x => x.out != null ? x.out : lastWeek;
+  rows.sort((a, b) => (a.out == null ? 99 : a.out) > (b.out == null ? 99 : b.out) ? -1
+    : (a.out == null ? 99 : a.out) < (b.out == null ? 99 : b.out) ? 1
+    : sc(b.t, keyWeek(b)) - sc(a.t, keyWeek(a)) || b.rp - a.rp);
+
+  const alive = rows.filter(x => x.out == null).length;
+  const champDone = isFinal(LAST);
+  const pot = 200 * data.leagues.length, pay = [0.60, 0.25, 0.15];
+  const curLive = !isFinal(lastWeek);
+
+  const title = document.querySelector("#playoffs .sec-head h2");
+  if (title) title.textContent = "PLAYOFFS";
+  const picker = document.getElementById("race-week");
+  if (picker) picker.style.display = "none";
+  const sub = document.getElementById("race-sub");
+  if (sub) sub.textContent = champDone ? "FINAL" : (lastWeek === LAST ? "CHAMPIONSHIP · WEEK 17" : `WEEK ${lastWeek} · ${alive} TEAMS LEFT`);
+
+  let html = `<p class="po-note">Each week starts from zero. Top 5 of 8 advance after Week 15, top 3 after Week 16, and Week 17 decides 1st, 2nd and 3rd.</p>`;
+  html += `<table class="po"><thead><tr><th class="p-rank">#</th><th>TEAM</th>`;
+  for (let w = START; w <= lastWeek; w++) html += `<th class="p-wk">W${w}</th>`;
+  html += `</tr></thead><tbody>`;
+  rows.forEach((x, i) => {
+    const t = x.t;
+    const cutLine = !curLive ? false : (CUTS[lastWeek] && x.out == null && i === CUTS[lastWeek] - 1);
+    html += `<tr class="${x.out != null ? 'out' : ''}${cutLine ? ' cut' : ''}">`;
+    html += `<td class="p-rank">${i + 1}</td>`;
+    html += `<td class="p-name"><span class="team-link" onclick="openTeam('${t.leagueId}',${t.rosterId})">${t.name}</span>`;
+    html += `<span class="league-badge ${CONFIG.leagueColors[t.leagueIdx] || "league-0"}">L${t.leagueIdx + 1}</span>`;
+    if (champDone && i < 3) html += `<span class="p-pay">$${Math.round(pot * pay[i])}</span>`;
+    html += `</td>`;
+    for (let w = START; w <= lastWeek; w++) {
+      const played = x.out == null || w <= x.out;
+      const cls = 'p-wk' + (w === lastWeek && x.out == null ? ' cur' : '') + (w === lastWeek && curLive ? ' live' : '');
+      html += played
+        ? `<td class="${cls}" onclick="openRoster('${t.leagueId}',${t.rosterId},${w - 1})">${sc(t, w).toFixed(1)}</td>`
+        : `<td class="p-wk"></td>`;
+    }
+    html += `</tr>`;
+  });
+  html += `</tbody></table>`;
+  box.innerHTML = html;
+  return true;
+}
+
 function renderRace(data) {
   const race = data.race;
   if (!race || !race.finalWeeks) return;
