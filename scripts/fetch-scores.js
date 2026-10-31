@@ -401,14 +401,17 @@ async function main() {
   // Future head-to-head pairings never change mid-season, so they're cached in
   // scores.json and only re-fetched once per NFL week instead of every run.
   let pairingsCache = { week: null, leagues: {} };
+  let prevDrafts = {}; // draft picks never change once the draft is done: reuse them
   let prevHistory = {}; // odds from earlier finalized weeks: they never change, so reuse them
   try {
     const prev = JSON.parse(fs.readFileSync(OUT_PATH, 'utf8'));
     if (prev && prev.pairingsCache) pairingsCache = prev.pairingsCache;
     if (prev && prev.raceHistory) prevHistory = prev.raceHistory;
+    if (prev && prev.drafts) prevDrafts = prev.drafts;
   } catch (e) { /* first run or unreadable file: just fetch fresh */ }
 
   const allTeams = [];
+  const drafts = {}; // leagueId -> { date, teams, picks: { rosterId: { playerName: [pick_no, round] } } }
   const leaguesMeta = [];
   const leaguePairings = []; // per league: { week: [[rosterA, rosterB], ...] }
 
@@ -426,6 +429,44 @@ async function main() {
 
     const rosters = await fetchJSON(`https://api.sleeper.app/v1/league/${league.id}/rosters`);
     await sleep(200);
+
+    // Draft picks (for the team popup). Cached once complete; a failure here
+    // must never break the score update.
+    try {
+      const cached = prevDrafts[league.id];
+      if (cached && cached.picks && Object.keys(cached.picks).length > 0) {
+        drafts[league.id] = cached;
+      } else {
+        const dl = await fetchJSON(`https://api.sleeper.app/v1/league/${league.id}/drafts`);
+        await sleep(200);
+        const d = Array.isArray(dl) ? (dl.find(x => x.status === 'complete') || dl[0]) : null;
+        if (d && d.draft_id) {
+          const picks = await fetchJSON(`https://api.sleeper.app/v1/draft/${d.draft_id}/picks`);
+          await sleep(200);
+          const teamsN = (d.settings && d.settings.teams) || rosters.length || 12;
+          const ownerToRoster = {};
+          rosters.forEach(r => { if (r.owner_id) ownerToRoster[r.owner_id] = r.roster_id; });
+          const map = {}; // rosterId -> { playerName: [pick_no, round] }
+          (Array.isArray(picks) ? picks : []).forEach(pk => {
+            if (!pk.player_id) return;
+            const rid = pk.roster_id || ownerToRoster[pk.picked_by] || (d.slot_to_roster_id && d.slot_to_roster_id[pk.draft_slot]);
+            const info = playerCache[pk.player_id];
+            const md = pk.metadata || {};
+            const name = (info && info.n) || [md.first_name, md.last_name].filter(Boolean).join(' ');
+            if (!rid || !name) return;
+            (map[rid] = map[rid] || {})[name] = [pk.pick_no, pk.round];
+          });
+          drafts[league.id] = {
+            date: d.start_time || d.last_picked || d.created || null,
+            teams: teamsN,
+            picks: map,
+          };
+          console.log(`  Draft: ${Object.values(map).reduce((a, m) => a + Object.keys(m).length, 0)} picks cached`);
+        }
+      }
+    } catch (err) {
+      console.warn(`  Could not load draft: ${err.message}`);
+    }
 
     // Per-roster: weekly scores and roster breakdowns
     const weeklyData = {}; // rosterId -> { scores: [], rosters: [] }
@@ -558,6 +599,7 @@ async function main() {
     race,
     raceHistory,
     pairingsCache: newPairingsCache,
+    drafts,
     teams: allTeams,
   };
 
