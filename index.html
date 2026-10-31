@@ -1243,9 +1243,6 @@ function openRoster(leagueId, rosterId, weekIdx) {
   html += `<div class="modal-header">`;
   html += `<div style="display:flex;align-items:center;gap:8px">`;
   html += `<span class="label">WEEK ${week}</span>`;
-  // points finish that week across all teams (both leagues)
-  const finish = 1 + _appData.teams.filter(t => (t.scores[weekIdx] || 0) > score).length;
-  html += `<span class="wk-finish">${finish}<span>/${_appData.teams.length}</span></span>`;
   html += `<span class="league-badge ${CONFIG.leagueColors[leagueIdx]||"league-0"}">L${leagueIdx+1}</span>`;
   // opponent that week (tap to open their roster for the same week)
   const oppId = team.opp ? team.opp[weekIdx] : null;
@@ -1253,6 +1250,9 @@ function openRoster(leagueId, rosterId, weekIdx) {
   if (opp && opp.rosters && opp.rosters[weekIdx]) {
     html += `<span class="vs" onclick="openRoster('${leagueId}',${opp.rosterId},${weekIdx})">vs <span class="vs-name">${opp.name}</span></span>`;
   }
+  // points finish that week across all teams (both leagues)
+  const finish = 1 + _appData.teams.filter(t => (t.scores[weekIdx] || 0) > score).length;
+  html += `<span class="wk-finish">${finish}<span>/${_appData.teams.length}</span></span>`;
   html += `</div>`;
   html += `<button class="modal-close" onclick="closeRoster()">&times;</button>`;
   html += `</div>`;
