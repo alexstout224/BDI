@@ -1252,9 +1252,10 @@ function openRoster(leagueId, rosterId, weekIdx) {
   }
   // points finish that week across all teams (both leagues)
   const finish = 1 + _appData.teams.filter(t => (t.scores[weekIdx] || 0) > score).length;
-  html += `<span class="wk-finish">${finish}<span>/${_appData.teams.length}</span></span>`;
   html += `</div>`;
-  html += `<button class="modal-close" onclick="closeRoster()">&times;</button>`;
+  html += `<div style="display:flex;align-items:center;gap:10px;flex-shrink:0">`;
+  html += `<span class="wk-finish">${finish}<span>/${_appData.teams.length}</span></span>`;
+  html += `<button class="modal-close" onclick="closeRoster()">&times;</button></div>`;
   html += `</div>`;
 
   html += `<div class="modal-team">`;
