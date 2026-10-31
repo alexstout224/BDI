@@ -428,6 +428,8 @@ table.race .od-d { display: inline-block; min-width: 20px; text-align: left; mar
   display: flex; align-items: center; justify-content: center; cursor: pointer;
 }
 .modal-close:hover { border-color: var(--concrete); color: var(--concrete); }
+.wk-finish { font-size:12px; font-weight:bold; color:var(--gold); letter-spacing:.04em; }
+.wk-finish span { color:var(--muted); font-weight:normal; font-size:10px; }
 .modal-team {
   padding: 8px 14px 4px; display: flex; align-items: baseline; justify-content: space-between;
 }
@@ -1241,6 +1243,9 @@ function openRoster(leagueId, rosterId, weekIdx) {
   html += `<div class="modal-header">`;
   html += `<div style="display:flex;align-items:center;gap:8px">`;
   html += `<span class="label">WEEK ${week}</span>`;
+  // points finish that week across all teams (both leagues)
+  const finish = 1 + _appData.teams.filter(t => (t.scores[weekIdx] || 0) > score).length;
+  html += `<span class="wk-finish">${finish}<span>/${_appData.teams.length}</span></span>`;
   html += `<span class="league-badge ${CONFIG.leagueColors[leagueIdx]||"league-0"}">L${leagueIdx+1}</span>`;
   // opponent that week (tap to open their roster for the same week)
   const oppId = team.opp ? team.opp[weekIdx] : null;
