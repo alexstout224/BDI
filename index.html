@@ -438,6 +438,7 @@ table.race .od-d { display: inline-block; min-width: 20px; text-align: left; mar
 .wk-legend { font-size:8px; color:var(--muted); margin:2px 14px 8px; }
 .wk-legend i { display:inline-block; width:10px; border-top:1px dashed var(--gold); vertical-align:middle; margin-right:4px; }
 .roster-row .pick { font-size:10px; color:var(--muted); width:38px; text-align:right; margin-right:14px; }
+.roster-row .used { font-size:10px; color:var(--concrete); width:22px; text-align:center; margin-right:8px; }
 .roster-row.zero { opacity:.4; }
 .roster-section-label {
   font-size: 8px; font-weight: bold; letter-spacing: .16em;
@@ -1216,9 +1217,10 @@ function openTeam(leagueId, rosterId) {
 
   // players: total points across weeks, grouped by position
   const tot = {};
-  (team.rosters || []).forEach(r => (r || []).forEach(pl => {
-    const o = tot[pl.n] || (tot[pl.n] = { n: pl.n, p: pl.p, t: pl.t, pts: 0 });
+  (team.rosters || []).forEach((r, wi) => (r || []).forEach(pl => {
+    const o = tot[pl.n] || (tot[pl.n] = { n: pl.n, p: pl.p, t: pl.t, pts: 0, used: 0 });
     o.pts += pl.pts || 0;
+    if (pl.s && wi < final) o.used++;
   }));
   Object.keys(picks).forEach(n => { if (!tot[n]) tot[n] = { n, p: '', t: '', pts: 0 }; });
 
@@ -1231,7 +1233,7 @@ function openTeam(leagueId, rosterId) {
   html += `<div class="st"><b>${odds}</b><span>ADVANCE ODDS</span></div></div>`;
   html += `<div class="roster-section-label starters" style="padding-top:2px">WEEKLY SCORES · TAP A WEEK</div>`;
   html += `<div class="wk-chart">${bars}${meds}</div><div class="wk-nums">${nums}</div>`;
-  html += `<div class="wk-legend"><i></i>Median &nbsp;·&nbsp; Number under each week = points finish in your league (of ${lg.length})</div>`;
+  html += `<div class="wk-legend"><i></i>Median &nbsp;·&nbsp; Number under each week = points finish in your league (of ${lg.length}) &nbsp;·&nbsp; Column before points = weeks counted in best-ball lineup</div>`;
 
   [['QB','QB'],['RB','RB'],['WR','WR'],['TE','TE']].forEach(([pos, label]) => {
     const list = Object.values(tot).filter(x => x.p === pos).sort((a, b) => b.pts - a.pts);
@@ -1239,7 +1241,7 @@ function openTeam(leagueId, rosterId) {
     list.forEach(pl => {
       html += `<div class="roster-row ${pl.pts <= 0 ? 'zero' : ''}"><div class="pos-tag pos-${pos.toLowerCase()}">${pos}</div>`;
       html += `<div class="player-info"><span class="player-name">${pl.n}</span><span class="player-meta">${pl.t || ''}</span></div>`;
-      html += `<div class="pick">${pickLabel(picks[pl.n])}</div>`;
+      html += `<div class="pick">${pickLabel(picks[pl.n])}</div><div class="used">${pl.used || ''}</div>`;
       html += `<div class="player-pts">${pl.pts.toFixed(1)}</div></div>`;
     });
   });
