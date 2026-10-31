@@ -421,20 +421,21 @@ table.race .od-d { display: inline-block; min-width: 20px; text-align: left; mar
 .modal-team .total span { font-size: 11px; color: var(--muted); margin-left: 4px; }
 
 
-.team-stats { display:flex; gap:8px; margin:4px 0 12px; }
-.team-stats .st { flex:1; background:var(--ground-well); padding:8px 6px; text-align:center; }
-.team-stats .st b { display:block; font-size:18px; color:var(--gold); }
-.team-stats .st span { font-size:8px; letter-spacing:.08em; color:var(--muted); }
+.team-stats { display:flex; gap:6px; margin:8px 14px 10px; }
+.team-stats .st { flex:1; background:var(--ground-well); padding:4px 4px; text-align:center; }
+.team-stats .st b { display:block; font-size:14px; color:var(--gold); }
+.team-stats .st span { font-size:7px; letter-spacing:.08em; color:var(--muted); }
 .team-sub { font-size:10px; color:var(--muted); margin-top:2px; }
-.wk-chart { position:relative; display:flex; align-items:flex-end; gap:3px; height:90px; margin:6px 0 2px; padding-top:4px; }
+.wk-chart { position:relative; display:flex; align-items:flex-end; gap:3px; height:54px; margin:6px 14px 2px; padding-top:4px; }
 .wk-chart .bar { flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; cursor:pointer; }
 .wk-chart .fill { background:var(--spill-out); width:100%; }
 .wk-chart .fill.below { background:var(--spill-in); opacity:.75; }
 .wk-chart .fill.live { background:var(--muted); opacity:.35; }
 .wk-chart .med { position:absolute; left:0; right:0; border-top:1px dashed var(--gold); pointer-events:none; }
-.wk-nums { display:flex; gap:3px; }
-.wk-nums span { flex:1; text-align:center; font-size:8px; color:var(--muted); }
-.wk-legend { font-size:9px; color:var(--muted); margin:2px 0 10px; }
+.wk-nums { display:flex; gap:3px; margin:0 14px; }
+.wk-nums span { flex:1; text-align:center; font-size:8px; color:var(--muted); line-height:1.3; }
+.wk-nums span b { display:block; color:var(--concrete); font-size:9px; }
+.wk-legend { font-size:8px; color:var(--muted); margin:2px 14px 8px; }
 .wk-legend i { display:inline-block; width:10px; border-top:1px dashed var(--gold); vertical-align:middle; margin-right:4px; }
 .roster-row .pick { font-size:10px; color:var(--muted); width:38px; text-align:right; margin-right:14px; }
 .roster-row.zero { opacity:.4; }
@@ -1208,8 +1209,9 @@ function openTeam(leagueId, rosterId) {
     const m = isLive ? null : median(w);
     const cls = isLive ? 'live' : (v < m ? 'below' : '');
     bars += `<div class="bar" title="Week ${w+1}: ${v.toFixed(1)}${m != null ? ' (median ' + m.toFixed(1) + ')' : ''}" onclick="openRoster('${leagueId}',${rosterId},${w})"><div class="fill ${cls}" style="height:${(v / maxV * 100).toFixed(1)}%"></div></div>`;
-    nums += `<span>${w+1}</span>`;
-    if (m != null) meds += `<div class="med" style="width:calc((100% - ${(nW-1)*3}px)/${nW} + 3px);left:calc((100% - ${(nW-1)*3}px)/${nW}*${w} + ${w*3}px);bottom:${(m / maxV * 90).toFixed(1)}px;top:auto"></div>`;
+    const fin = isLive ? '' : 1 + lg.filter(t => (t.scores[w] || 0) > v).length;
+    nums += `<span>${w+1}${fin !== '' ? `<b>${fin}</b>` : ''}</span>`;
+    if (m != null) meds += `<div class="med" style="width:calc((100% - ${(nW-1)*3}px)/${nW} + 3px);left:calc((100% - ${(nW-1)*3}px)/${nW}*${w} + ${w*3}px);bottom:${(m / maxV * 50).toFixed(1)}px;top:auto"></div>`;
   }
 
   // players: total points across weeks, grouped by position
@@ -1221,20 +1223,19 @@ function openTeam(leagueId, rosterId) {
   Object.keys(picks).forEach(n => { if (!tot[n]) tot[n] = { n, p: '', t: '', pts: 0 }; });
 
   let html = `<div class="modal-header"><div style="display:flex;align-items:center;gap:8px">`;
-  html += `<span class="label">TEAM</span><span class="league-badge ${CONFIG.leagueColors[team.leagueIdx]||"league-0"}">L${team.leagueIdx+1}</span></div>`;
+  html += `<span class="label" style="text-transform:none;letter-spacing:0;font-size:15px;color:var(--concrete)">${team.name}</span><span class="league-badge ${CONFIG.leagueColors[team.leagueIdx]||"league-0"}">L${team.leagueIdx+1}</span></div>`;
   html += `<button class="modal-close" onclick="closeRoster()">&times;</button></div>`;
-  html += `<div class="modal-team" style="display:block"><h3>${team.name}</h3>${drafted ? `<div class="team-sub">${drafted}</div>` : ''}</div>`;
+  html += `${drafted ? `<div class="team-sub" style="padding:6px 14px 0">${drafted}</div>` : ''}`;
   html += `<div class="team-stats"><div class="st"><b>${team.cumulative.toFixed(1)}</b><span>TOTAL SCORE</span></div>`;
   html += `<div class="st"><b>${rank}<small style="font-size:10px"> / ${lg.length}</small></b><span>LEAGUE RANK</span></div>`;
   html += `<div class="st"><b>${odds}</b><span>ADVANCE ODDS</span></div></div>`;
-  html += `<div class="roster-section-label starters">WEEKLY SCORES · TAP A WEEK</div>`;
+  html += `<div class="roster-section-label starters" style="padding-top:2px">WEEKLY SCORES · TAP A WEEK</div>`;
   html += `<div class="wk-chart">${bars}${meds}</div><div class="wk-nums">${nums}</div>`;
-  html += `<div class="wk-legend"><i></i>League median</div>`;
+  html += `<div class="wk-legend"><i></i>Median &nbsp;·&nbsp; Number under each week = points finish in your league (of ${lg.length})</div>`;
 
   [['QB','QB'],['RB','RB'],['WR','WR'],['TE','TE']].forEach(([pos, label]) => {
     const list = Object.values(tot).filter(x => x.p === pos).sort((a, b) => b.pts - a.pts);
     if (!list.length) return;
-    html += `<div class="roster-section-label starters">${label}</div>`;
     list.forEach(pl => {
       html += `<div class="roster-row ${pl.pts <= 0 ? 'zero' : ''}"><div class="pos-tag pos-${pos.toLowerCase()}">${pos}</div>`;
       html += `<div class="player-info"><span class="player-name">${pl.n}</span><span class="player-meta">${pl.t || ''}</span></div>`;
