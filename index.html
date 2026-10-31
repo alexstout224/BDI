@@ -720,7 +720,7 @@ footer {
       <ul>
         <li>Every full league keeps <b>$100</b> for its own winner and sends <b>$200</b> to the overall pot.</li>
         <li>The pot pays <b>60% to first, 25% to second, 15% to third.</b></li>
-        <li>Three leagues makes the pot $600, which is <b>$360, $150, and $90.</b> Four leagues makes it $800.</li>
+        <li>Two leagues makes the pot $400, which is <b>$240, $100, and $60.</b></li>
         <li>Paid out within 48 hours of the last Week 17 game.</li>
       </ul>
     </div>
@@ -818,8 +818,21 @@ function setStandingsFilter(f) { standingsFilter = f; if (_appData) renderStandi
 function toggleStandingsFilter(idx) { setStandingsFilter(standingsFilter === idx ? 'all' : idx); }
 
 function renderStandings(data) {
-  const allTeams = [...data.teams];
-  const weeks = data.currentWeek || 0;
+  // Standings are the regular season only: from Week 15 on they freeze at Week 14
+  // (totals, W/L and week columns), since playoff weeks don't count toward them.
+  const RS = CONFIG.regularSeasonWeeks;
+  const frozen = (data.currentWeek || 0) > RS;
+  const allTeams = !frozen ? [...data.teams] : data.teams.map(t => {
+    const scores = t.scores.slice(0, RS);
+    let wins = 0, losses = 0;
+    if (t.race && t.race.w != null) { wins = t.race.w; losses = t.race.l; }
+    else scores.forEach((v, i) => {
+      const o = data.teams.find(x => x.leagueId === t.leagueId && x.rosterId === (t.opp || [])[i]);
+      if (o) { const ov = o.scores[i] || 0; if (v > ov) wins++; else if (v < ov) losses++; }
+    });
+    return { ...t, scores, cumulative: Math.round(scores.reduce((a, b) => a + (b || 0), 0) * 100) / 100, record: { wins, losses } };
+  });
+  const weeks = frozen ? RS : (data.currentWeek || 0);
   // Sleeper's currentWeek advances on its own calendar cutoff, often before
   // that week's games actually kick off. So "not in a live window" doesn't
   // mean the current week is done — it might not have started at all yet,
@@ -830,7 +843,7 @@ function renderStandings(data) {
   // that instead.
   const currentWeekHasScores = weeks > 0 && allTeams.some(t => (t.scores[weeks - 1] || 0) > 0);
   const completedWeeks = currentWeekHasScores ? weeks : weeks - 1;
-  const weekIsLive = currentWeekHasScores && !data.weekConcluded;
+  const weekIsLive = !frozen && currentWeekHasScores && !data.weekConcluded;
 
   if (completedWeeks < 1) return;
 
@@ -903,8 +916,7 @@ function renderStandings(data) {
     html += '</tr></thead><tbody>';
 
     sorted.forEach((t, i) => {
-      const cls = i < CONFIG.advancePerLeague * data.leagues.length &&
-                  completedWeeks >= CONFIG.regularSeasonWeeks ? " advancing" : "";
+      const cls = completedWeeks >= RS && !weekIsLive && t.race && t.race.odds >= 0.5 ? " advancing" : "";
       html += `<tr class="${cls}">`;
       html += `<td class="col-rank">${i+1}</td>`;
       html += `<td class="col-name">`;
