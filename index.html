@@ -447,6 +447,7 @@ table.race .od-d { display: inline-block; min-width: 20px; text-align: left; mar
 .wk-chart .bar { flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; cursor:pointer; }
 .wk-chart .fill { background:var(--spill-out); width:100%; }
 .wk-chart .fill.below { background:var(--spill-in); opacity:.75; }
+.wk-chart .fill.tie { background:var(--muted); opacity:.5; }
 .wk-chart .fill.live { background:var(--muted); opacity:.35; }
 .wk-chart .med { position:absolute; left:0; right:0; border-top:1px dashed var(--gold); pointer-events:none; }
 .wk-nums { display:flex; gap:3px; margin:0 14px; }
@@ -454,6 +455,10 @@ table.race .od-d { display: inline-block; min-width: 20px; text-align: left; mar
 .wk-chart .fill { display:flex; justify-content:center; align-items:flex-end; }
 .wk-chart .fill em { font-style:normal; font-size:9px; letter-spacing:-.02em; font-weight:bold; color:var(--concrete); padding-bottom:2px; }
 .med-key { float:right; color:var(--muted); letter-spacing:.1em; }
+.med-key b { display:inline-block; width:7px; height:7px; vertical-align:middle; margin:0 3px 0 6px; }
+.med-key b.k-w { background:var(--spill-out); }
+.med-key b.k-l { background:var(--spill-in); opacity:.75; }
+.med-key i { margin-left:6px; }
 .med-key i { display:inline-block; width:10px; border-top:1px dashed var(--gold); vertical-align:middle; margin-right:4px; }
 .pl-head { display:flex; align-items:center; padding:10px 14px 4px; font-size:8px; font-weight:bold; letter-spacing:.12em; color:var(--gold); border-bottom:1px solid rgba(242,237,227,.1); }
 .pl-head .pos-tag { width:26px; flex-shrink:0; }
@@ -968,13 +973,10 @@ function setRaceWeek(w) {
 }
  
 /* ---- playoffs (weeks 15-17): 8 -> 5 -> 3, each week scored from zero ---- */
-function renderPlayoffs(data) {
+/* playoff field + eliminations (shared by the playoffs table and the team popup) */
+function playoffState(data) {
   const START = CONFIG.playoffStart, LAST = CONFIG.totalWeeks;
-  const CUTS = { 15: 5, 16: 3 };              // teams that survive each week
-  if (!data || data.currentWeek < START) return false;
-  const box = document.getElementById("playoffs-content");
-  if (!box) return false;
-
+  const CUTS = { 15: 5, 16: 3 };
   const hasScores = w => data.teams.some(t => (t.scores[w - 1] || 0) > 0);
   const isFinal = w => w < data.currentWeek || (w === data.currentWeek && data.weekConcluded && hasScores(w));
   const lastWeek = Math.min(data.currentWeek, LAST);
@@ -1011,6 +1013,17 @@ function renderPlayoffs(data) {
       .sort((a, b) => sc(b.t, w) - sc(a.t, w) || b.rp - a.rp);
     alive.slice(CUTS[w]).forEach(x => { x.out = w; });
   }
+  return { rows, isFinal, lastWeek, sc, regPts };
+}
+
+function renderPlayoffs(data) {
+  const START = CONFIG.playoffStart, LAST = CONFIG.totalWeeks;
+  const CUTS = { 15: 5, 16: 3 };              // teams that survive each week
+  if (!data || data.currentWeek < START) return false;
+  const box = document.getElementById("playoffs-content");
+  if (!box) return false;
+
+  const { rows, isFinal, lastWeek, sc } = playoffState(data);
   // sort: still alive first (by latest week), then the most recently eliminated
   const keyWeek = x => x.out != null ? x.out : lastWeek;
   rows.sort((a, b) => (a.out == null ? 99 : a.out) > (b.out == null ? 99 : b.out) ? -1
@@ -1337,6 +1350,8 @@ function openTeam(leagueId, rosterId) {
   };
 
   // chart
+  const po = d.currentWeek >= CONFIG.playoffStart ? playoffState(d) : null;
+  const sc17 = t => t.scores[CONFIG.totalWeeks - 1] || 0;
   // one shared scale for every team: top = highest single-week score in the contest
   let maxV = 1;
   d.teams.forEach(t => t.scores.forEach(v => { if ((v || 0) > maxV) maxV = v; }));
@@ -1345,7 +1360,19 @@ function openTeam(leagueId, rosterId) {
   for (let w = 0; w < nW; w++) {
     const v = team.scores[w] || 0, isLive = w >= final;
     const m = isLive ? null : median(w);
-    const cls = isLive ? 'live' : (v < m ? 'below' : '');
+    let cls;
+    if (isLive) cls = 'live';
+    else if (w < CONFIG.regularSeasonWeeks) {          // regular season: head-to-head result
+      const o = lg.find(t => t.rosterId === (team.opp || [])[w]);
+      const ov = o ? (o.scores[w] || 0) : null;
+      cls = ov == null || ov === v ? 'tie' : (v > ov ? '' : 'below');
+    } else {                                           // playoffs: advanced (bright) or knocked out (dark)
+      const pr = po && po.rows.find(x => x.t === team);
+      const wk = w + 1;
+      if (!pr || (pr.out != null && wk > pr.out)) cls = 'tie';
+      else if (wk === CONFIG.totalWeeks) cls = po.rows.filter(x => x.out == null).every(x => x.t === team || sc17(x.t) < v) ? '' : 'below';
+      else cls = pr.out === wk ? 'below' : '';
+    }
     bars += `<div class="bar" title="Week ${w+1}: ${v.toFixed(1)}${m != null ? ' (median ' + m.toFixed(1) + ')' : ''}" onclick="openRoster('${leagueId}',${rosterId},${w})"><div class="fill ${cls}" style="height:${(v / maxV * 100).toFixed(1)}%">${isLive ? '' : `<em>${(n => nW > 10 ? n : ordinal(n))(1 + d.teams.filter(t => (t.scores[w] || 0) > v).length)}</em>`}</div></div>`;
     nums += `<span>${w+1}</span>`;
     if (m != null) meds += `<div class="med" style="width:calc((100% - ${(nW-1)*3}px)/${nW} + 3px);left:calc((100% - ${(nW-1)*3}px)/${nW}*${w} + ${w*3}px);bottom:${(m / maxV * 50).toFixed(1)}px;top:auto"></div>`;
@@ -1363,11 +1390,10 @@ function openTeam(leagueId, rosterId) {
   let html = `<div class="modal-header"><div style="display:flex;align-items:center;gap:8px">`;
   html += `<span class="label" style="text-transform:none;letter-spacing:0;font-size:15px;color:var(--concrete)">${team.name}</span><span class="league-badge ${CONFIG.leagueColors[team.leagueIdx]||"league-0"}">L${team.leagueIdx+1}</span></div>`;
   html += `<button class="modal-close" onclick="closeRoster()">&times;</button></div>`;
-  html += `${drafted ? `<div class="team-sub" style="padding:6px 14px 0">${drafted}</div>` : ''}`;
   html += `<div class="team-stats"><div class="st"><b>${team.cumulative.toFixed(1)}</b><span>TOTAL SCORE</span></div>`;
   html += `<div class="st"><b>${rank}<small style="font-size:10px"> / ${lg.length}</small></b><span>LEAGUE RANK</span></div>`;
   html += `<div class="st"><b>${odds}</b><span>ADVANCE ODDS</span></div></div>`;
-  html += `<div class="roster-section-label starters" style="padding-top:2px">WEEKLY SCORES · TAP A WEEK<span class="med-key"><i></i>MEDIAN</span></div>`;
+  html += `<div class="roster-section-label starters" style="padding-top:2px">WEEKLY SCORES · TAP A WEEK<span class="med-key"><b class="k-w"></b>W <b class="k-l"></b>L <i></i>MEDIAN</span></div>`;
   html += `<div class="wk-chart">${bars}${meds}</div><div class="wk-nums">${nums}</div>`;
   html += `<div class="pl-head"><div class="pos-tag"></div><div class="player-info">PLAYER</div><div class="pick">PICK</div><div class="used">COUNTED</div><div class="player-pts">PTS</div></div>`;
 
