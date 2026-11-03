@@ -1132,7 +1132,7 @@ function renderRace(data) {
       }
  
       html += `<tr class="${cls.trim()}"><td class="r-rank">${i + 1}</td>`;
-      html += `<td class="r-name"><span class="team-link" onclick="openRoster('${t.leagueId}',${t.rosterId},${week - 1})">${t.name}</span></td>`;
+      html += `<td class="r-name"><span class="team-link" onclick="openTeam('${t.leagueId}',${t.rosterId})">${t.name}</span></td>`;
       html += `<td class="r-back${lead ? " lead" : ""}">${back}</td>`;
       // wins, shown like the POINTS column: everyone tied for the most wins shows their
       // total, everyone else shows how many wins back (\u22121, \u22122, ...)
