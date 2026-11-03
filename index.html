@@ -1337,8 +1337,9 @@ function openTeam(leagueId, rosterId) {
   };
 
   // chart
+  // one shared scale for every team: top = highest single-week score in the contest
   let maxV = 1;
-  for (let w = 0; w < nW; w++) maxV = Math.max(maxV, team.scores[w] || 0, w < final ? median(w) : 0);
+  d.teams.forEach(t => t.scores.forEach(v => { if ((v || 0) > maxV) maxV = v; }));
   const ordinal = n => n + ([, 'st', 'nd', 'rd'][n % 100 >> 3 ^ 1 && n % 10] || 'th');
   let bars = '', nums = '', meds = '';
   for (let w = 0; w < nW; w++) {
