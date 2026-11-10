@@ -1316,6 +1316,7 @@ function openRoster(leagueId, rosterId, weekIdx) {
 
 function openTeam(leagueId, rosterId) {
   if (!_appData) return;
+  _backToTeam = null;
   const d = _appData;
   const team = d.teams.find(t => t.leagueId === leagueId && t.rosterId === rosterId);
   if (!team) return;
@@ -1373,7 +1374,7 @@ function openTeam(leagueId, rosterId) {
       else if (wk === CONFIG.totalWeeks) cls = po.rows.filter(x => x.out == null).every(x => x.t === team || sc17(x.t) < v) ? '' : 'below';
       else cls = pr.out === wk ? 'below' : '';
     }
-    bars += `<div class="bar" title="Week ${w+1}: ${v.toFixed(1)}${m != null ? ' (median ' + m.toFixed(1) + ')' : ''}" onclick="openRoster('${leagueId}',${rosterId},${w})"><div class="fill ${cls}" style="height:${(v / maxV * 100).toFixed(1)}%">${isLive ? '' : `<em>${(n => nW > 10 ? n : ordinal(n))(1 + d.teams.filter(t => (t.scores[w] || 0) > v).length)}</em>`}</div></div>`;
+    bars += `<div class="bar" title="Week ${w+1}: ${v.toFixed(1)}${m != null ? ' (median ' + m.toFixed(1) + ')' : ''}" onclick="_backToTeam={leagueId:'${leagueId}',rosterId:${rosterId}};openRoster('${leagueId}',${rosterId},${w})"><div class="fill ${cls}" style="height:${(v / maxV * 100).toFixed(1)}%">${isLive ? '' : `<em>${(n => nW > 10 ? n : ordinal(n))(1 + d.teams.filter(t => (t.scores[w] || 0) > v).length)}</em>`}</div></div>`;
     nums += `<span>${w+1}</span>`;
     if (m != null) meds += `<div class="med" style="width:calc((100% - ${(nW-1)*3}px)/${nW} + 3px);left:calc((100% - ${(nW-1)*3}px)/${nW}*${w} + ${w*3}px);bottom:${(m / maxV * 50).toFixed(1)}px;top:auto"></div>`;
   }
@@ -1414,14 +1415,18 @@ function openTeam(leagueId, rosterId) {
   document.body.style.overflow = "hidden";
 }
 
-function closeRoster() {
+// A week opened from the team popup remembers it, so X goes back to the team view.
+let _backToTeam = null;
+function closeRoster(all) {
+  if (!all && _backToTeam) { const b = _backToTeam; _backToTeam = null; openTeam(b.leagueId, b.rosterId); return; }
+  _backToTeam = null;
   document.getElementById("roster-modal").classList.remove("open");
   document.body.style.overflow = "";
 }
 
 // Close on overlay click (not card click)
 document.getElementById("roster-modal").addEventListener("click", e => {
-  if (e.target === e.currentTarget) closeRoster();
+  if (e.target === e.currentTarget) closeRoster(true);
 });
 
 // Close on escape
