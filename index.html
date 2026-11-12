@@ -281,14 +281,23 @@ section + section { border-top: none; }
   letter-spacing: .04em;
 }
 
+/* ---- what's new ---- */
+.wn { padding:6px 16px 18px; }
+.wn-item { padding:10px 0; border-bottom:1px solid rgba(242,237,227,.08); }
+.wn-item b { color:var(--gold); font-size:13px; letter-spacing:.04em; }
+.wn-item p { margin:4px 0 0; font-size:13px; line-height:1.45; color:var(--concrete); opacity:.9; }
+.wn-ok { display:block; width:100%; margin-top:16px; padding:10px; background:var(--gold); color:var(--ground); border:0; font-weight:bold; letter-spacing:.14em; font-size:12px; cursor:pointer; font-family:inherit; }
 /* ---- player popup ---- */
-.pl-link { cursor:pointer; }
+.pl-link { cursor:pointer; border-bottom:1px solid rgba(242,237,227,.25); transition:border-color .15s; }
+.pl-link:hover { border-bottom-color:var(--gold); }
 .pl-stats { display:flex; gap:6px; margin:10px 14px; }
 .pl-stats .st { flex:1; background:var(--ground-well); padding:5px 4px; text-align:center; }
 .pl-stats .st b { display:block; font-size:14px; color:var(--gold); }
 .pl-stats .st span { font-size:7px; letter-spacing:.08em; color:var(--muted); }
 .pl-stats .st.wide { flex:1.6; }
-.pl-stats .two { display:flex; justify-content:space-around; }
+.pl-stats .two { display:grid; grid-template-columns:1fr 1fr; }
+.pl-stats .two > div { text-align:center; }
+.pl-stats .two span { display:block; }
 .pl-stats .cap { display:block; margin-top:2px; }
 .pl-own { margin:0 14px 6px; }
 .pl-own .hd { display:flex; gap:8px; font-size:8px; letter-spacing:.12em; color:var(--gold); font-weight:bold; padding:8px 0 3px; border-bottom:1px solid rgba(242,237,227,.1); }
@@ -839,6 +848,7 @@ const CONFIG = {
     const res = await fetch(CONFIG.dataUrl);
     if (res.ok) data = await res.json();
   } catch(e) { /* no data yet, show empty states */ }
+  showWhatsNew(); // after the first await, so the whole script has loaded
 
   if (!data || !data.teams || data.teams.length === 0) return;
 
@@ -1454,6 +1464,26 @@ function openTeam(leagueId, rosterId) {
   document.body.style.overflow = "hidden";
 }
 
+/* ---- what's new: shown once per browser (remembered in localStorage, no cookies) ---- */
+const WHATS_NEW_ID = 'whatsnew-2026-11';
+function showWhatsNew() {
+  let seen = false;
+  try { seen = localStorage.getItem(WHATS_NEW_ID) === '1'; } catch (e) {}
+  if (seen) return;
+  let html = `<div class="modal-header"><div style="display:flex;align-items:center;gap:8px"><span class="label">WHAT'S NEW</span></div><button class="modal-close" onclick="dismissWhatsNew()">&times;</button></div>`;
+  html += `<div class="wn">`;
+  html += `<div class="wn-item"><b>Playoff Race</b><p>Each team's odds to advance, updated after every week. Find it on the Playoffs tab, and use the week menu to see how the odds have moved.</p></div>`;
+  html += `<div class="wn-item"><b>Team pages</b><p>Tap a team name in Standings or the Playoff Race: total points, weekly scores vs the median, and every player with his draft pick.</p></div>`;
+  html += `<div class="wn-item"><b>Player pages</b><p>Tap any player's name in a roster: his points, rank among BDI players, which teams have him, and his weekly schedule.</p></div>`;
+  html += `<div class="wn-item"><b>Playoff format</b><p>Eight teams make it, four per league. Top five advance after Week 15, top three after Week 16, and Week 17 decides the title. Full details are in Rules.</p></div>`;
+  html += `<button class="wn-ok" onclick="dismissWhatsNew()">GOT IT</button></div>`;
+  document.getElementById("roster-card").innerHTML = html;
+  document.getElementById("roster-modal").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+function markWhatsNewSeen() { try { localStorage.setItem(WHATS_NEW_ID, '1'); } catch (e) {} }
+function dismissWhatsNew() { markWhatsNewSeen(); closeRoster(true); }
+
 /* ---- player popup ---- */
 const plKey = p => p.i ? 'i' + p.i : p.n + '|' + p.p;
 const escA = v => String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
@@ -1495,7 +1525,7 @@ async function openPlayer(key) {
   html += `<button class="modal-close" onclick="closeRoster()">&times;</button></div>`;
   html += `<div class="pl-stats"><div class="st"><b>${total.toFixed(1)}</b><span>POINTS</span></div>`;
   html += `<div class="st"><b>${scoring ? (total / scoring).toFixed(1) : '—'}</b><span>AVG SCORING WK</span></div>`;
-  html += `<div class="st wide"><div class="two"><b>${posRank}</b><b>${ovrRank}</b></div><div class="two"><span>${me.p}</span><span>OVERALL</span></div><span class="cap">BDI RANK</span></div></div>`;
+  html += `<div class="st wide"><div class="two"><div><b>${posRank}</b><span>${me.p}</span></div><div><b>${ovrRank}</b><span>OVERALL</span></div></div><span class="cap">BDI RANK</span></div></div>`;
 
   // teams that have him
   const po = d.currentWeek >= CONFIG.playoffStart ? playoffState(d) : null;
@@ -1558,11 +1588,11 @@ function closeRoster(all) {
 
 // Close on overlay click (not card click)
 document.getElementById("roster-modal").addEventListener("click", e => {
-  if (e.target === e.currentTarget) closeRoster(true);
+  if (e.target === e.currentTarget) { markWhatsNewSeen(); closeRoster(true); }
 });
 
 // Close on escape
-document.addEventListener("keydown", e => { if (e.key === "Escape") closeRoster(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") { markWhatsNewSeen(); closeRoster(); } });
 </script>
 
 </body>
