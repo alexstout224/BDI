@@ -293,13 +293,17 @@ section + section { border-top: none; }
 .pl-own { margin:0 14px 6px; }
 .pl-own .hd { display:flex; gap:8px; font-size:8px; letter-spacing:.12em; color:var(--gold); font-weight:bold; padding:8px 0 3px; border-bottom:1px solid rgba(242,237,227,.1); }
 .pl-own .hd span:first-child { flex:1; }
-.pl-own .hd span:not(:first-child) { width:48px; text-align:right; }
+.pl-own .hd span:not(:first-child) { width:44px; text-align:right; flex-shrink:0; }
+.pl-own .hd .c-rec, .pl-own .rc { width:30px !important; }
+.pl-own .hd .c-st, .pl-own .sx { width:40px !important; }
+.pl-own .hd span:last-child, .pl-own .ct { width:50px !important; }
+.pl-own .rc, .pl-own .sx { font-size:11px; color:var(--concrete); text-align:right; flex-shrink:0; }
 .pl-own .row { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid rgba(242,237,227,.08); font-size:13px; }
 .pl-own .nm { flex:1; min-width:0; display:flex; align-items:center; gap:6px; }
 .pl-own .nm .tn { font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
 .pl-own .nm .league-badge, .pl-own .nm .sub { flex-shrink:0; }
 .pl-own .nm .sub { font-size:11px; color:var(--muted); white-space:nowrap; }
-.pl-own .pk, .pl-own .ct { font-size:11px; color:var(--muted); width:48px; text-align:right; flex-shrink:0; }
+.pl-own .pk, .pl-own .ct { font-size:11px; color:var(--muted); width:44px; text-align:right; flex-shrink:0; }
 .pl-wk2 { display:flex; gap:18px; margin:4px 14px 16px; }
 .pl-wk2 .col { flex:1; min-width:0; }
 .pl-wk2 .hd, .pl-wk2 .r { display:flex; align-items:center; gap:6px; }
@@ -1501,20 +1505,22 @@ async function openPlayer(key) {
     let st = '';
     if (po) {
       const x = po.rows.find(x => x.t === t);
-      st = !x ? 'Out' : x.out != null ? `Out Wk ${x.out}` : 'Alive';
-    } else if (d.race && d.race.finalWeeks >= RS) st = r.odds >= 0.5 ? 'Playoffs' : 'Out';
+      st = !x ? 'Out' : x.out != null ? `Out W${x.out}` : 'Alive';
+    } else if (d.race && d.race.finalWeeks >= RS) st = r.odds >= 0.5 ? 'In' : 'Out';
     else if (r.odds != null) st = fmtOdds(r.odds, false);
-    return [rec, st].filter(Boolean).join(' · ');
+    return { rec, st };
   };
-  html += `<div class="pl-own"><div class="hd"><span>TEAMS</span><span>PICK</span><span>COUNTED</span></div>`;
+  const stHead = po || (d.race && d.race.finalWeeks >= RS) ? 'PLAYOFFS' : 'ODDS';
+  html += `<div class="pl-own"><div class="hd"><span>TEAMS</span><span class="c-rec">REC</span><span class="c-st">${stHead}</span><span>PICK</span><span>COUNTED</span></div>`;
   owners.forEach(t => {
     const dr = d.drafts && d.drafts[t.leagueId];
     const pk = dr && dr.picks && dr.picks[t.rosterId] && dr.picks[t.rosterId][me.n];
     const nT = (dr && dr.teams) || 12;
     const lab = pk ? pk[1] + '.' + String(pk[0] - (pk[1] - 1) * nT).padStart(2, '0') : '';
     let used = 0; for (let w = 0; w < final; w++) { const q = find(t.rosters[w]); if (q && q.s) used++; }
-    html += `<div class="row"><span class="nm"><span class="tn pl-link" onclick="_nav(()=>openTeam('${t.leagueId}',${t.rosterId}))">${t.name}</span><span class="league-badge ${CONFIG.leagueColors[t.leagueIdx] || 'league-0'}">L${t.leagueIdx + 1}</span><span class="sub">${status(t)}</span></span>`;
-    html += `<span class="pk">${lab}</span><span class="ct">${used} of ${final}</span></div>`;
+    html += `<div class="row"><span class="nm"><span class="tn pl-link" onclick="_nav(()=>openTeam('${t.leagueId}',${t.rosterId}))">${t.name}</span><span class="league-badge ${CONFIG.leagueColors[t.leagueIdx] || 'league-0'}">L${t.leagueIdx + 1}</span></span>`;
+    const so = status(t);
+    html += `<span class="rc">${so.rec}</span><span class="sx">${so.st}</span><span class="pk">${lab}</span><span class="ct">${used} of ${final}</span></div>`;
   });
   html += `</div>`;
 
