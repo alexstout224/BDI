@@ -126,11 +126,18 @@ async function main() {
   // scheduling can move Sunday/Monday/Thursday games later in the season.
   // A week that's cached but empty (e.g. from a prior failed fetch) is NOT
   // considered done — Object.keys check ensures those get retried.
-  for (let w = 1; w <= currentWeek; w++) {
+  // Future weeks (through Week 18) are fetched too, so the site can show
+  // upcoming opponents; they're refetched every run since flex scheduling
+  // can still move them.
+  const LAST_WEEK = 18;
+  for (let w = 1; w <= LAST_WEEK; w++) {
     if (cache[w] && Object.keys(cache[w]).length > 0 && w < currentWeek) continue;
     console.log(`Fetching schedule for week ${w}...`);
     try {
-      cache[w] = await fetchWeekSchedule(w, seasonYear);
+      const wk = await fetchWeekSchedule(w, seasonYear);
+      // a future week ESPN hasn't published yet comes back as all BYEs: keep what we had
+      if (Object.values(wk).some(t => t.opp)) cache[w] = wk;
+      else if (!cache[w]) cache[w] = {};
     } catch (err) {
       console.error(`  Failed to fetch week ${w}: ${err.message}`);
       if (!cache[w]) cache[w] = {}; // don't crash the whole run over one bad week

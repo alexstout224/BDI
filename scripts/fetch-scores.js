@@ -91,7 +91,7 @@ function computeOptimalLineup(playersPoints, playerCache, weekSchedule) {
     score += p.pts;
     const g = weekSchedule && weekSchedule[p.team];
     roster.push({
-      n: p.name, p: p.pos, t: p.team, pts: p.pts, s: true, sl: slots[p.pid],
+      i: p.pid, n: p.name, p: p.pos, t: p.team, pts: p.pts, s: true, sl: slots[p.pid],
       ...(g ? { g: { slot: g.slot, k: g.kickoff } } : {}),
     });
   }
@@ -103,7 +103,7 @@ function computeOptimalLineup(playersPoints, playerCache, weekSchedule) {
   for (const p of benchList) {
     const g = weekSchedule && weekSchedule[p.team];
     roster.push({
-      n: p.name, p: p.pos, t: p.team, pts: p.pts, s: false,
+      i: p.pid, n: p.name, p: p.pos, t: p.team, pts: p.pts, s: false,
       ...(g ? { g: { slot: g.slot, k: g.kickoff } } : {}),
     });
   }

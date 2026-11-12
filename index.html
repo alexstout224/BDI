@@ -280,6 +280,41 @@ section + section { border-top: none; }
   font-size: 13px; font-weight: bold; color: var(--gold);
   letter-spacing: .04em;
 }
+
+/* ---- player popup ---- */
+.pl-link { cursor:pointer; }
+.pl-stats { display:flex; gap:6px; margin:10px 14px; }
+.pl-stats .st { flex:1; background:var(--ground-well); padding:5px 4px; text-align:center; }
+.pl-stats .st b { display:block; font-size:14px; color:var(--gold); }
+.pl-stats .st span { font-size:7px; letter-spacing:.08em; color:var(--muted); }
+.pl-stats .st.wide { flex:1.6; }
+.pl-stats .two { display:flex; justify-content:space-around; }
+.pl-stats .cap { display:block; margin-top:2px; }
+.pl-own { margin:0 14px 6px; }
+.pl-own .hd { display:flex; gap:8px; font-size:8px; letter-spacing:.12em; color:var(--gold); font-weight:bold; padding:8px 0 3px; border-bottom:1px solid rgba(242,237,227,.1); }
+.pl-own .hd span:first-child { flex:1; }
+.pl-own .hd span:not(:first-child) { width:48px; text-align:right; }
+.pl-own .row { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid rgba(242,237,227,.08); font-size:13px; }
+.pl-own .nm { flex:1; min-width:0; display:flex; align-items:center; gap:6px; }
+.pl-own .nm .tn { font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.pl-own .nm .league-badge, .pl-own .nm .sub { flex-shrink:0; }
+.pl-own .nm .sub { font-size:11px; color:var(--muted); white-space:nowrap; }
+.pl-own .pk, .pl-own .ct { font-size:11px; color:var(--muted); width:48px; text-align:right; flex-shrink:0; }
+.pl-wk2 { display:flex; gap:18px; margin:4px 14px 16px; }
+.pl-wk2 .col { flex:1; min-width:0; }
+.pl-wk2 .hd, .pl-wk2 .r { display:flex; align-items:center; gap:6px; }
+.pl-wk2 .hd { font-size:8px; letter-spacing:.12em; color:var(--gold); font-weight:bold; padding:8px 0 3px; border-bottom:1px solid rgba(242,237,227,.1); }
+.pl-wk2 .r { height:26px; border-bottom:1px solid rgba(242,237,227,.06); font-size:12px; }
+.pl-wk2 .wk { width:20px; color:var(--muted); }
+.pl-wk2 .r .wk { font-size:11px; }
+.pl-wk2 .op { flex:1; }
+.pl-wk2 .pt { width:38px; text-align:right; }
+.pl-wk2 .r .pt { font-weight:bold; }
+.pl-wk2 .r.bye { color:var(--muted); opacity:.6; }
+.pl-wk2 .r.future { opacity:.35; }
+.pl-wk2 .r.po { background:rgba(224,168,60,.10); opacity:1; }
+.pl-wk2 .r.po .wk { color:var(--gold); padding-left:4px; }
+.pl-wk2 .r.po.future .op { opacity:.45; }
 /* ---- playoffs table (weeks 15-17) ---- */
 table.po { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:24px; }
 table.po th, table.po td { padding:7px 6px; text-align:left; white-space:nowrap; font-size:13px; border-bottom:1px solid rgba(242,237,227,.10); }
@@ -1233,6 +1268,7 @@ function gameMetaHTML(team, g) {
 }
 
 function openRoster(leagueId, rosterId, weekIdx) {
+  _curView = () => openRoster(leagueId, rosterId, weekIdx);
   if (!_appData) return;
   const team = _appData.teams.find(t => t.leagueId === leagueId && t.rosterId === rosterId);
   if (!team || !team.rosters || !team.rosters[weekIdx]) return;
@@ -1286,7 +1322,7 @@ function openRoster(leagueId, rosterId, weekIdx) {
     html += `<div class="roster-row starter ${rowColorClass(slot, true)}">`;
     html += `<div class="pos-tag ${posColorClass(slot)}">${slot}</div>`;
     html += `<div class="player-info">`;
-    html += `<span class="player-name">${pl.n}</span>`;
+    html += `<span class="player-name pl-link" data-k="${escA(plKey(pl))}" onclick="const k=this.dataset.k;_nav(()=>openPlayer(k))">${pl.n}</span>`;
     html += `<span class="player-meta">${gameMetaHTML(pl.t, pl.g)}</span>`;
     html += `</div>`;
     html += `<div class="player-pts">${pl.pts.toFixed(1)}</div>`;
@@ -1301,7 +1337,7 @@ function openRoster(leagueId, rosterId, weekIdx) {
     html += `<div class="roster-row bench-row${pending ? ' bench-pending' : ''}">`;
     html += `<div class="pos-tag ${posColorClass(pl.p)}">${pl.p}</div>`;
     html += `<div class="player-info">`;
-    html += `<span class="player-name">${pl.n}</span>`;
+    html += `<span class="player-name pl-link" data-k="${escA(plKey(pl))}" onclick="const k=this.dataset.k;_nav(()=>openPlayer(k))">${pl.n}</span>`;
     html += `<span class="player-meta">${gameMetaHTML(pl.t, pl.g)}</span>`;
     html += `</div>`;
     html += `<div class="player-pts">${pl.pts.toFixed(1)}</div>`;
@@ -1316,7 +1352,7 @@ function openRoster(leagueId, rosterId, weekIdx) {
 
 function openTeam(leagueId, rosterId) {
   if (!_appData) return;
-  _backToTeam = null;
+  _curView = () => openTeam(leagueId, rosterId);
   const d = _appData;
   const team = d.teams.find(t => t.leagueId === leagueId && t.rosterId === rosterId);
   if (!team) return;
@@ -1374,7 +1410,7 @@ function openTeam(leagueId, rosterId) {
       else if (wk === CONFIG.totalWeeks) cls = po.rows.filter(x => x.out == null).every(x => x.t === team || sc17(x.t) < v) ? '' : 'below';
       else cls = pr.out === wk ? 'below' : '';
     }
-    bars += `<div class="bar" title="Week ${w+1}: ${v.toFixed(1)}${m != null ? ' (median ' + m.toFixed(1) + ')' : ''}" onclick="_backToTeam={leagueId:'${leagueId}',rosterId:${rosterId}};openRoster('${leagueId}',${rosterId},${w})"><div class="fill ${cls}" style="height:${(v / maxV * 100).toFixed(1)}%">${isLive ? '' : `<em>${(n => nW > 10 ? n : ordinal(n))(1 + d.teams.filter(t => (t.scores[w] || 0) > v).length)}</em>`}</div></div>`;
+    bars += `<div class="bar" title="Week ${w+1}: ${v.toFixed(1)}${m != null ? ' (median ' + m.toFixed(1) + ')' : ''}" onclick="_nav(()=>openRoster('${leagueId}',${rosterId},${w}))"><div class="fill ${cls}" style="height:${(v / maxV * 100).toFixed(1)}%">${isLive ? '' : `<em>${(n => nW > 10 ? n : ordinal(n))(1 + d.teams.filter(t => (t.scores[w] || 0) > v).length)}</em>`}</div></div>`;
     nums += `<span>${w+1}</span>`;
     if (m != null) meds += `<div class="med" style="width:calc((100% - ${(nW-1)*3}px)/${nW} + 3px);left:calc((100% - ${(nW-1)*3}px)/${nW}*${w} + ${w*3}px);bottom:${(m / maxV * 50).toFixed(1)}px;top:auto"></div>`;
   }
@@ -1382,11 +1418,10 @@ function openTeam(leagueId, rosterId) {
   // players: total points across weeks, grouped by position
   const tot = {};
   (team.rosters || []).forEach((r, wi) => (r || []).forEach(pl => {
-    const o = tot[pl.n] || (tot[pl.n] = { n: pl.n, p: pl.p, t: pl.t, pts: 0, used: 0 });
+    const o = tot[plKey(pl)] || (tot[plKey(pl)] = { n: pl.n, p: pl.p, t: pl.t, i: pl.i, pts: 0, used: 0 });
     o.pts += pl.pts || 0;
     if (pl.s && wi < final) o.used++;
   }));
-  Object.keys(picks).forEach(n => { if (!tot[n]) tot[n] = { n, p: '', t: '', pts: 0 }; });
 
   let html = `<div class="modal-header"><div style="display:flex;align-items:center;gap:8px">`;
   html += `<span class="label" style="text-transform:none;letter-spacing:0;font-size:15px;color:var(--concrete)">${team.name}</span><span class="league-badge ${CONFIG.leagueColors[team.leagueIdx]||"league-0"}">L${team.leagueIdx+1}</span></div>`;
@@ -1403,7 +1438,7 @@ function openTeam(leagueId, rosterId) {
     if (!list.length) return;
     list.forEach(pl => {
       html += `<div class="roster-row ${pl.pts <= 0 ? 'zero' : ''}"><div class="pos-tag pos-${pos.toLowerCase()}">${pos}</div>`;
-      html += `<div class="player-info"><span class="player-name">${pl.n}</span><span class="player-meta">${pl.t || ''}</span></div>`;
+      html += `<div class="player-info"><span class="player-name pl-link" data-k="${escA(plKey(pl))}" onclick="const k=this.dataset.k;_nav(()=>openPlayer(k))">${pl.n}</span><span class="player-meta">${pl.t || ''}</span></div>`;
       html += `<div class="pick">${pickLabel(picks[pl.n])}</div><div class="used">${pl.used}</div>`;
       html += `<div class="player-pts">${pl.pts.toFixed(1)}</div></div>`;
     });
@@ -1415,11 +1450,102 @@ function openTeam(leagueId, rosterId) {
   document.body.style.overflow = "hidden";
 }
 
-// A week opened from the team popup remembers it, so X goes back to the team view.
-let _backToTeam = null;
+/* ---- player popup ---- */
+const plKey = p => p.i ? 'i' + p.i : p.n + '|' + p.p;
+const escA = v => String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+let _schedule = null;   // data/schedule.json, loaded the first time a player is opened
+
+async function openPlayer(key) {
+  const d = _appData;
+  if (!d) return;
+  _curView = () => openPlayer(key);
+  if (!_schedule) {
+    try { const res = await fetch('data/schedule.json'); _schedule = res.ok ? await res.json() : {}; }
+    catch (e) { _schedule = {}; }
+  }
+  const find = r => (r || []).find(p => plKey(p) === key);
+  const owners = d.teams.filter(t => find(t.rosters[t.rosters.length - 1]));
+  if (!owners.length) return;
+  const first = owners[0];
+  const me = find(first.rosters[first.rosters.length - 1]);
+  const RS = CONFIG.regularSeasonWeeks, LAST = CONFIG.totalWeeks;
+  const curHas = d.teams.some(t => (t.scores[d.currentWeek - 1] || 0) > 0);
+  const final = (curHas && d.weekConcluded) ? d.currentWeek : d.currentWeek - 1;
+  const wkPts = []; for (let w = 0; w < d.currentWeek; w++) { const p = find(first.rosters[w]); wkPts.push(p ? p.pts : 0); }
+  const done = wkPts.slice(0, final);
+  const total = done.reduce((a, b) => a + b, 0);
+  const scoring = done.filter(v => v > 0).length;
+
+  // rank by points among every BDI-drafted player (by position and overall)
+  const seen = {};
+  d.teams.forEach(t => (t.rosters[t.rosters.length - 1] || []).forEach(p => { const k = plKey(p); if (!seen[k]) seen[k] = { t, p: p.p }; }));
+  const all = Object.entries(seen).map(([k, o]) => {
+    let s = 0; for (let w = 0; w < final; w++) { const q = (o.t.rosters[w] || []).find(p => plKey(p) === k); s += q ? q.pts : 0; }
+    return { k, pos: o.p, s };
+  });
+  const rankIn = list => [...list].sort((a, b) => b.s - a.s).findIndex(x => x.k === key) + 1;
+  const posRank = rankIn(all.filter(x => x.pos === me.p)), ovrRank = rankIn(all);
+
+  let html = `<div class="modal-header"><div style="display:flex;align-items:center;gap:8px;min-width:0">`;
+  html += `<span class="pos-tag pos-${(me.p || '').toLowerCase()}">${me.p}</span><span class="label" style="text-transform:none;letter-spacing:0;font-size:15px;color:var(--concrete)">${me.n}</span><span style="font-size:11px;color:var(--muted)">${me.t || ''}</span></div>`;
+  html += `<button class="modal-close" onclick="closeRoster()">&times;</button></div>`;
+  html += `<div class="pl-stats"><div class="st"><b>${total.toFixed(1)}</b><span>POINTS</span></div>`;
+  html += `<div class="st"><b>${scoring ? (total / scoring).toFixed(1) : '—'}</b><span>AVG SCORING WK</span></div>`;
+  html += `<div class="st wide"><div class="two"><b>${posRank}</b><b>${ovrRank}</b></div><div class="two"><span>${me.p}</span><span>OVERALL</span></div><span class="cap">BDI RANK</span></div></div>`;
+
+  // teams that have him
+  const po = d.currentWeek >= CONFIG.playoffStart ? playoffState(d) : null;
+  const status = t => {
+    const r = t.race || {};
+    const rec = r.w != null ? `${r.w}-${r.l}${r.t ? '-' + r.t : ''}` : '';
+    let st = '';
+    if (po) {
+      const x = po.rows.find(x => x.t === t);
+      st = !x ? 'Out' : x.out != null ? `Out Wk ${x.out}` : 'Alive';
+    } else if (d.race && d.race.finalWeeks >= RS) st = r.odds >= 0.5 ? 'Playoffs' : 'Out';
+    else if (r.odds != null) st = fmtOdds(r.odds, false);
+    return [rec, st].filter(Boolean).join(' · ');
+  };
+  html += `<div class="pl-own"><div class="hd"><span>TEAMS</span><span>PICK</span><span>COUNTED</span></div>`;
+  owners.forEach(t => {
+    const dr = d.drafts && d.drafts[t.leagueId];
+    const pk = dr && dr.picks && dr.picks[t.rosterId] && dr.picks[t.rosterId][me.n];
+    const nT = (dr && dr.teams) || 12;
+    const lab = pk ? pk[1] + '.' + String(pk[0] - (pk[1] - 1) * nT).padStart(2, '0') : '';
+    let used = 0; for (let w = 0; w < final; w++) { const q = find(t.rosters[w]); if (q && q.s) used++; }
+    html += `<div class="row"><span class="nm"><span class="tn pl-link" onclick="_nav(()=>openTeam('${t.leagueId}',${t.rosterId}))">${t.name}</span><span class="league-badge ${CONFIG.leagueColors[t.leagueIdx] || 'league-0'}">L${t.leagueIdx + 1}</span><span class="sub">${status(t)}</span></span>`;
+    html += `<span class="pk">${lab}</span><span class="ct">${used} of ${final}</span></div>`;
+  });
+  html += `</div>`;
+
+  // weekly: two columns, weeks 1-9 | 10-17, playoff weeks tinted
+  const cell = w => {
+    const g = (_schedule[w + 1] || {})[me.t];
+    const opp = g ? (g.opp ? (g.home ? '' : '@') + g.opp : 'BYE') : '';
+    const fut = w >= final, v = wkPts[w] || 0;
+    return `<div class="r${opp === 'BYE' ? ' bye' : ''}${fut ? ' future' : ''}${w >= RS ? ' po' : ''}"><span class="wk">${w + 1}</span><span class="op">${opp}</span><span class="pt">${fut || opp === 'BYE' ? '' : v.toFixed(1)}</span></div>`;
+  };
+  const head = `<div class="hd"><span class="wk">WK</span><span class="op">OPP</span><span class="pt">PTS</span></div>`;
+  const split = Math.ceil(LAST / 2);
+  html += `<div class="pl-wk2"><div class="col">${head}`;
+  for (let w = 0; w < split; w++) html += cell(w);
+  html += `</div><div class="col">${head}`;
+  for (let w = split; w < LAST; w++) html += cell(w);
+  html += `</div></div>`;
+
+  document.getElementById("roster-card").innerHTML = html;
+  document.getElementById("roster-modal").classList.add("open");
+  document.getElementById("roster-modal").scrollTop = 0;
+  document.body.style.overflow = "hidden";
+}
+
+// Popups opened from another popup remember it, so X steps back one level
+// (tapping outside the card closes everything).
+let _navStack = [], _curView = null;
+function _nav(fn) { if (_curView) _navStack.push(_curView); fn(); }
 function closeRoster(all) {
-  if (!all && _backToTeam) { const b = _backToTeam; _backToTeam = null; openTeam(b.leagueId, b.rosterId); return; }
-  _backToTeam = null;
+  if (!all && _navStack.length) { _navStack.pop()(); return; }
+  _navStack = []; _curView = null;
   document.getElementById("roster-modal").classList.remove("open");
   document.body.style.overflow = "";
 }
