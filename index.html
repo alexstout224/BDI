@@ -1505,8 +1505,12 @@ async function openPlayer(key) {
   const RS = CONFIG.regularSeasonWeeks, LAST = CONFIG.totalWeeks;
   const curHas = d.teams.some(t => (t.scores[d.currentWeek - 1] || 0) > 0);
   const final = (curHas && d.weekConcluded) ? d.currentWeek : d.currentWeek - 1;
-  const wkPts = []; for (let w = 0; w < d.currentWeek; w++) { const p = find(first.rosters[w]); wkPts.push(p ? p.pts : 0); }
-  const done = wkPts.slice(0, final);
+  // a week counts once it's final, or (in the live week) once that player's game window has closed
+  const cur = d.currentWeek - 1;
+  const counts = (w, p) => w < final || (w === cur && !!p && !!p.g && !!p.g.k && isGameClosed(p.g));
+  const wkPts = [], wkDone = [];
+  for (let w = 0; w < d.currentWeek; w++) { const p = find(first.rosters[w]); wkPts.push(p ? p.pts : 0); wkDone.push(counts(w, p)); }
+  const done = wkPts.filter((v, w) => wkDone[w]);
   const total = done.reduce((a, b) => a + b, 0);
   const scoring = done.filter(v => v > 0).length;
 
@@ -1514,7 +1518,7 @@ async function openPlayer(key) {
   const seen = {};
   d.teams.forEach(t => (t.rosters[t.rosters.length - 1] || []).forEach(p => { const k = plKey(p); if (!seen[k]) seen[k] = { t, p: p.p }; }));
   const all = Object.entries(seen).map(([k, o]) => {
-    let s = 0; for (let w = 0; w < final; w++) { const q = (o.t.rosters[w] || []).find(p => plKey(p) === k); s += q ? q.pts : 0; }
+    let s = 0; for (let w = 0; w < d.currentWeek; w++) { const q = (o.t.rosters[w] || []).find(p => plKey(p) === k); if (q && counts(w, q)) s += q.pts; }
     return { k, pos: o.p, s };
   });
   const rankIn = list => [...list].sort((a, b) => b.s - a.s).findIndex(x => x.k === key) + 1;
@@ -1558,7 +1562,7 @@ async function openPlayer(key) {
   const cell = w => {
     const g = (_schedule[w + 1] || {})[me.t];
     const opp = g ? (g.opp ? (g.home ? '' : '@') + g.opp : 'BYE') : '';
-    const fut = w >= final, v = wkPts[w] || 0;
+    const fut = !wkDone[w], v = wkPts[w] || 0;
     return `<div class="r${opp === 'BYE' ? ' bye' : ''}${fut ? ' future' : ''}${w >= RS ? ' po' : ''}"><span class="wk">${w + 1}</span><span class="op">${opp}</span><span class="pt">${fut || opp === 'BYE' ? '' : v.toFixed(1)}</span></div>`;
   };
   const head = `<div class="hd"><span class="wk">WK</span><span class="op">OPP</span><span class="pt">PTS</span></div>`;
