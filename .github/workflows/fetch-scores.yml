@@ -33,6 +33,8 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
+            # the Sleeper cache rides along only when scores changed
+            git add data/sleeper-cache.json 2>/dev/null || true
             git commit -m "Update scores $(date -u +'%b %d %H:%M UTC')"
             git push
           fi

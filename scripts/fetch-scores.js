@@ -27,6 +27,10 @@ const LINEUP = { QB: 1, RB: 2, WR: 3, TE: 1 };
 const OUT_PATH = path.join(__dirname, '..', 'data', 'scores.json');
 const POS_PATH = path.join(__dirname, '..', 'data', 'player-positions.json');
 const SCHEDULE_PATH = path.join(__dirname, '..', 'data', 'schedule.json');
+// Raw Sleeper responses for weeks that are over, so each run only asks Sleeper
+// for what can still change (the live week). Not loaded by the site.
+const CACHE_PATH = path.join(__dirname, '..', 'data', 'sleeper-cache.json');
+const HOUR = 3600 * 1000;
 
 function fetchJSON(urlStr) {
   return new Promise((resolve, reject) => {
@@ -410,6 +414,29 @@ async function main() {
     if (prev && prev.drafts) prevDrafts = prev.drafts;
   } catch (e) { /* first run or unreadable file: just fetch fresh */ }
 
+  // Sleeper response cache. Finished weeks never change once stat corrections
+  // settle (by Wednesday), so: the live week is always fetched fresh; last week
+  // is re-pulled on every run Tuesday and Wednesday (Central), then frozen;
+  // older weeks are reused forever. Users and rosters (team names, owners) are
+  // re-checked every 6 hours.
+  const ctDay = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', weekday: 'short' }).format(new Date());
+  const correctionsOpen = ctDay === 'Tue' || ctDay === 'Wed';
+  let sleeperCache = { season: null, leagues: {} };
+  try { sleeperCache = JSON.parse(fs.readFileSync(CACHE_PATH, 'utf8')); } catch (e) {}
+  if (sleeperCache.season !== state.season) sleeperCache = { season: state.season, leagues: {} };
+  let sleeperCalls = 0, cacheHits = 0;
+  const cachedFetch = async (lid, key, url, maxAgeMs, trim) => {
+    const lc = sleeperCache.leagues[lid] || (sleeperCache.leagues[lid] = {});
+    const hit = lc[key];
+    if (hit && maxAgeMs > 0 && Date.now() - hit.at < maxAgeMs) { cacheHits++; return hit.data; }
+    const data = await fetchJSON(url);
+    sleeperCalls++;
+    await sleep(200);
+    lc[key] = { at: Date.now(), data: trim ? trim(data) : data };
+    return lc[key].data;
+  };
+  const trimMatchups = ms => (ms || []).map(m => ({ roster_id: m.roster_id, matchup_id: m.matchup_id, points: m.points, players_points: m.players_points }));
+
   const allTeams = [];
   const drafts = {}; // leagueId -> { date, teams, picks: { rosterId: { playerName: [pick_no, round] } } }
   const leaguesMeta = [];
@@ -419,16 +446,14 @@ async function main() {
     const league = LEAGUES[li];
     console.log(`\nLeague ${li + 1}: ${league.name} (${league.id})`);
 
-    const users = await fetchJSON(`https://api.sleeper.app/v1/league/${league.id}/users`);
-    await sleep(200);
+    const users = await cachedFetch(league.id, 'users', `https://api.sleeper.app/v1/league/${league.id}/users`, 6 * HOUR);
     const userMap = {};
     users.forEach(u => {
       userMap[u.user_id] = NAME_OVERRIDES[u.user_id]
         || u.metadata?.team_name || u.display_name || u.username || 'Unknown';
     });
 
-    const rosters = await fetchJSON(`https://api.sleeper.app/v1/league/${league.id}/rosters`);
-    await sleep(200);
+    const rosters = await cachedFetch(league.id, 'rosters', `https://api.sleeper.app/v1/league/${league.id}/rosters`, 6 * HOUR);
 
     // Draft picks (for the team popup). Cached once complete; a failure here
     // must never break the score update.
@@ -473,8 +498,8 @@ async function main() {
     const pairingsByWeek = {}; // week -> [[rosterA, rosterB], ...]
 
     for (let w = 1; w <= currentWeek; w++) {
-      const matchups = await fetchJSON(`https://api.sleeper.app/v1/league/${league.id}/matchups/${w}`);
-      await sleep(200);
+      const maxAge = w === currentWeek ? 0 : (w === currentWeek - 1 && correctionsOpen) ? 0 : Infinity;
+      const matchups = await cachedFetch(league.id, 'w' + w, `https://api.sleeper.app/v1/league/${league.id}/matchups/${w}`, maxAge, trimMatchups);
       pairingsByWeek[w] = groupPairings(matchups);
 
       matchups.forEach(m => {
@@ -606,6 +631,8 @@ async function main() {
 
   fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true });
   fs.writeFileSync(OUT_PATH, JSON.stringify(output));
+  fs.writeFileSync(CACHE_PATH, JSON.stringify(sleeperCache));
+  console.log(`Sleeper calls this run: ${sleeperCalls + 1} (incl. state), served from cache: ${cacheHits}`);
   const sizeKB = Math.round(fs.statSync(OUT_PATH).size / 1024);
   console.log(`\nWrote ${allTeams.length} teams (${sizeKB} KB) to ${OUT_PATH}`);
 }
