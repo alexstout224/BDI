@@ -5,6 +5,16 @@ A running list of things to fix or check before the next season starts.
 ## Fixes
 - **Player team history.** Each player's NFL team comes from the weekly player refresh, and every past week is rebuilt with the current team. A player traded mid-season shows his new team (and that team's game slot) in older weeks. Points are not affected. Fix: save the team on each week's roster when the week is final, and stop overwriting it.
 
+## History and records (build for 2027)
+- **Before 2026 data is cleared:** archive the final 2026 `data/scores.json` (e.g. `data/history/2026.json`). Teams now carry `ownerId` (Sleeper user id), which stays the same across seasons even when team names change, so 2026 can be matched to 2027.
+- **Champion badge:** a badge next to the reigning champion's name if they play again.
+- **Seasons played on team pages:** list the years that person has played, e.g. "2026 · 2027".
+- **Records section** (spot TBD; the site is lean, so maybe a small section under Rules or its own tab):
+  - Champion each year, with their stats (Week 17 score, regular season points, record).
+  - Most regular season points.
+  - Best record and worst record.
+  - Possible extras: highest and lowest single week.
+
 ## Season setup checklist
 - New Sleeper league IDs in `index.html` (CONFIG) and the scripts.
 - Season constants: regular season weeks (14), playoff weeks (15–17), advancement (top 2 points + top 2 record per league), playoff cuts (8 → 5 → 3).

@@ -521,6 +521,7 @@ async function main() {
         rosterId: r.roster_id,
         leagueId: league.id,
         leagueIdx: li,
+        ownerId: r.owner_id || null, // Sleeper user id: stable across seasons, links a person year to year
         name: userMap[r.owner_id] || `Team ${r.roster_id}`,
         scores: wd.scores,
         rosters: wd.rosters,
