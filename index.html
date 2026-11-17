@@ -252,6 +252,7 @@ section + section { border-top: none; }
 }
 .live-table .col-rank { width: 42px; text-align: center; color: var(--muted); }
 .live-table .col-pts { text-align: right; font-weight: bold; font-size: 16px; }
+.live-table tr.po-out td { opacity: .35; }
 .live-table .team-link { color: var(--concrete); text-decoration: none; font-weight: bold;
   border-bottom: 1px solid rgba(242,237,227,.25); }
 .live-table .team-link:hover { border-bottom-color: var(--gold); }
@@ -1261,8 +1262,17 @@ function renderLive(data) {
   // Same currentWeek-ticks-early issue as standings: if the reported week
   // has no score data at all yet, show the last week that actually played.
   const currentWeekHasScores = data.teams.some(t => (t.scores[currentWeek - 1] || 0) > 0);
-  const wk = currentWeekHasScores ? currentWeek : currentWeek - 1;
+  // NFL Week 18 isn't part of BDI: stop at Week 17
+  const wk = Math.min(currentWeekHasScores ? currentWeek : currentWeek - 1, CONFIG.totalWeeks);
   if (wk < 1) return;
+
+  // Playoff weeks: teams that missed the playoffs, or were knocked out before
+  // this week, are shown muted.
+  let stillIn = null;
+  if (wk >= CONFIG.playoffStart) {
+    stillIn = new Set();
+    playoffState(data).rows.forEach(x => { if (x.out == null || x.out >= wk) stillIn.add(x.t); });
+  }
 
   const allTeams = [...data.teams].sort((a,b) => (b.scores[wk-1]||0) - (a.scores[wk-1]||0));
   const filtered = liveFilter === 'all' ? allTeams : allTeams.filter(t => String(t.leagueIdx) === liveFilter);
@@ -1290,7 +1300,7 @@ function renderLive(data) {
   html += '</tr></thead><tbody>';
   filtered.forEach((t, i) => {
     const pts = (t.scores[wk-1]||0).toFixed(1);
-    html += `<tr style="cursor:pointer" onclick="openRoster('${t.leagueId}',${t.rosterId},${wk-1})"><td class="col-rank">${i+1}</td>`;
+    html += `<tr class="${stillIn && !stillIn.has(t) ? 'po-out' : ''}" style="cursor:pointer" onclick="openRoster('${t.leagueId}',${t.rosterId},${wk-1})"><td class="col-rank">${i+1}</td>`;
     html += `<td><span class="team-link">${t.name}</span>`;
     html += ` <span class="league-badge ${CONFIG.leagueColors[t.leagueIdx]||"league-0"}">L${t.leagueIdx+1}</span></td>`;
     html += `<td class="col-pts">${pts}</td></tr>`;
