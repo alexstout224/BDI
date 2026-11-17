@@ -370,6 +370,8 @@ async function main() {
   console.log(`NFL state: week ${currentWeek}, season_type: ${seasonType}`);
 
   if (!currentWeek || seasonType === 'off') { console.log('Offseason'); return; }
+  // BDI ends after Week 17: leave the final data alone and skip Sleeper entirely
+  if (currentWeek > 17) { console.log(`Week ${currentWeek}: BDI season is over, nothing to fetch`); return; }
   if (seasonType === 'pre') {
     fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true });
     fs.writeFileSync(OUT_PATH, JSON.stringify({
