@@ -843,14 +843,31 @@ const CONFIG = {
   showTab(startTab);
 
   // try loading data
-  let data = null;
-  try {
-    const res = await fetch(CONFIG.dataUrl);
-    if (res.ok) data = await res.json();
-  } catch(e) { /* no data yet, show empty states */ }
+  await loadData();
   showWhatsNew(); // after the first await, so the whole script has loaded
 
+  // Phones keep the page in memory when you switch apps, so reopening the
+  // site shows whatever was loaded last time. When the page comes back into
+  // view, check for newer scores (at most every 2 minutes).
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && Date.now() - _lastLoad > 2 * 60 * 1000) loadData();
+  });
+  window.addEventListener("pageshow", e => { if (e.persisted) loadData(); });
+})();
+
+/* ---- data loading (first load, and again when the page comes back into view) ---- */
+var _lastLoad = 0; // var, not let: the startup code calls loadData() before this line runs
+async function loadData() {
+  _lastLoad = Date.now();
+  let data = null;
+  try {
+    // no-cache: always ask the server whether the file changed (cheap; it
+    // answers "not modified" when it hasn't)
+    const res = await fetch(CONFIG.dataUrl, { cache: "no-cache" });
+    if (res.ok) data = await res.json();
+  } catch(e) { /* no data yet, or offline: keep what's on screen */ }
   if (!data || !data.teams || data.teams.length === 0) return;
+  if (_appData && _appData.lastUpdated === data.lastUpdated) return; // nothing new
 
   _appData = data;
   renderStandings(data);
@@ -865,7 +882,7 @@ const CONFIG = {
         month:"short", day:"numeric", hour:"numeric", minute:"2-digit"
       });
   }
-})();
+}
 
 /* ---- standings ---- */
 let standingsFilter = 'all';
