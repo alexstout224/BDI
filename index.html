@@ -207,6 +207,7 @@ section + section { border-top: none; }
 
 .standings .col-pts { font-weight: bold; width: 50px; padding-left: 4px; padding-right: 6px; }
 .standings .col-record { color: var(--muted); font-size: 13px; width: 44px; padding-left: 3px; padding-right: 5px; }
+.standings .col-ap { color: var(--muted); font-size: 13px; width: 46px; padding-left: 3px; padding-right: 5px; }
 .standings .col-week { color: var(--muted); font-size: 13px; text-align: right; width: 44px; padding-left: 3px; padding-right: 9px; }
 .standings th.col-week { text-align: right; }
 .standings .week-high { color: var(--gold); font-weight: bold; }
@@ -680,6 +681,7 @@ footer {
     <div id="standings-controls" class="sort-bar" style="display:none">
       <button class="sort-btn active" data-sort="cumulative">POINTS</button>
       <button class="sort-btn" data-sort="record">RECORD</button>
+      <button class="sort-btn" data-sort="allplay">ALL-PLAY</button>
     </div>
   </div>
 </div>
@@ -944,19 +946,41 @@ function renderStandings(data) {
     filtered.forEach(t => { const s = t.scores[w] || 0; if (s < low) low = s; });
     weekLows.push(low);
   }
-  let currentSort = "cumulative";
+  // All-play: each final week, a win against every team in the tournament
+  // (all 24, both leagues) you outscored. Ties count half. The live week is left out.
+  const apWeeks = weekIsLive ? completedWeeks - 1 : completedWeeks;
+  const allPlay = new Map();
+  allTeams.forEach(t => {
+    let w = 0, g = 0;
+    for (let k = 0; k < apWeeks; k++) {
+      const v = t.scores[k] || 0;
+      allTeams.forEach(o => {
+        if (o === t) return;
+        const ov = o.scores[k] || 0;
+        g++; if (v > ov) w++; else if (v === ov) w += 0.5;
+      });
+    }
+    allPlay.set(t.leagueId + ':' + t.rosterId, g ? w / g : 0);
+  });
+  const apOf = t => allPlay.get(t.leagueId + ':' + t.rosterId) || 0;
+  const fmtAP = v => v >= 1 ? '1.000' : v.toFixed(3).replace(/^0/, '');
+
+  let currentSort = (document.querySelector(".sort-btn.active") || {}).dataset?.sort || "cumulative";
   const sortBtns = document.querySelectorAll(".sort-btn");
-  sortBtns.forEach(btn => btn.addEventListener("click", () => {
+  // onclick (not addEventListener) so a re-render replaces the handler instead of stacking another
+  sortBtns.forEach(btn => btn.onclick = () => {
     currentSort = btn.dataset.sort;
     sortBtns.forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     draw();
-  }));
+  });
 
   function draw() {
     const sorted = [...filtered];
     if (currentSort === "cumulative") {
       sorted.sort((a,b) => b.cumulative - a.cumulative);
+    } else if (currentSort === "allplay") {
+      sorted.sort((a,b) => apOf(b) - apOf(a) || b.cumulative - a.cumulative);
     } else {
       sorted.sort((a,b) => {
         const diff = b.record.wins - a.record.wins;
@@ -968,15 +992,16 @@ function renderStandings(data) {
     // table-layout:fixed only truly locks column widths if the <table> itself
     // has an explicit width — without it, a long unbroken team name will
     // silently stretch the whole table (and every row) past its columns.
-    const TABLE_COL_WIDTHS = { rank: 18, name: 130, pts: 50, record: 44, week: 44 };
+    const TABLE_COL_WIDTHS = { rank: 18, name: 130, pts: 50, record: 44, ap: 46, week: 44 };
     const tableWidth = TABLE_COL_WIDTHS.rank + TABLE_COL_WIDTHS.name + TABLE_COL_WIDTHS.pts +
-      TABLE_COL_WIDTHS.record + TABLE_COL_WIDTHS.week * completedWeeks;
+      TABLE_COL_WIDTHS.record + TABLE_COL_WIDTHS.ap + TABLE_COL_WIDTHS.week * completedWeeks;
 
     let html = `<div class="table-scroll"><table class="standings" style="width:${tableWidth}px"><thead><tr>`;
     html += '<th class="col-rank">#</th>';
     html += '<th class="col-name">TEAM</th>';
     html += `<th class="col-pts sortable ${currentSort==="cumulative"?"sorted":""}" data-sort="cumulative">PTS</th>`;
     html += `<th class="col-record sortable ${currentSort==="record"?"sorted":""}" data-sort="record">W/L</th>`;
+    html += `<th class="col-ap sortable ${currentSort==="allplay"?"sorted":""}" data-sort="allplay">AP</th>`;
     for (let w = completedWeeks; w >= 1; w--) {
       html += `<th class="col-week">W${w}</th>`;
     }
@@ -992,6 +1017,7 @@ function renderStandings(data) {
       html += `</td>`;
       html += `<td class="col-pts">${t.cumulative.toFixed(1)}</td>`;
       html += `<td class="col-record">${t.record.wins}\u2013${t.record.losses}</td>`;
+      html += `<td class="col-ap">${apWeeks ? fmtAP(apOf(t)) : ''}</td>`;
       for (let w = completedWeeks - 1; w >= 0; w--) {
         const score = t.scores[w] || 0;
         const isHigh = score === weekHighs[w] && score > 0 && !(weekIsLive && w === completedWeeks - 1);
