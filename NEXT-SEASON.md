@@ -5,6 +5,9 @@ A running list of things to fix or check before the next season starts.
 ## Fixes
 - **Player team history.** Each player's NFL team comes from the weekly player refresh, and every past week is rebuilt with the current team. A player traded mid-season shows his new team (and that team's game slot) in older weeks. Points are not affected. Fix: save the team on each week's roster when the week is final, and stop overwriting it.
 
+## Nice to have
+- **Smaller main data file.** `data/scores.json` holds every team's full roster for every week (~650 KB raw, ~55 KB compressed by Week 11). If it gets slow, move finished weeks' rosters to a separate file loaded only when a past week, team page or player page is opened.
+
 ## History and records (build for 2027)
 - **Before 2026 data is cleared:** archive the final 2026 `data/scores.json` (e.g. `data/history/2026.json`). Teams now carry `ownerId` (Sleeper user id), which stays the same across seasons even when team names change, so 2026 can be matched to 2027.
 - **Champion badge:** a badge next to the reigning champion's name if they play again.
