@@ -314,7 +314,9 @@ section + section { border-top: none; }
 .pl-own .nm .tn { font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
 .pl-own .nm .league-badge, .pl-own .nm .sub { flex-shrink:0; }
 .pl-own .nm .sub { font-size:11px; color:var(--muted); white-space:nowrap; }
-.pl-own .pk, .pl-own .ct { font-size:11px; color:var(--muted); width:44px; text-align:right; flex-shrink:0; }
+.pl-own .pk, .pl-own .ct, .pl-own .dp { font-size:11px; color:var(--muted); width:44px; text-align:right; flex-shrink:0; }
+.pl-own .hd .c-dp, .pl-own .dp { width:50px !important; }
+.pl-own .hd span:nth-child(4), .pl-own .pk { width:32px !important; }
 .pl-wk2 { display:flex; gap:18px; margin:4px 14px 16px; }
 .pl-wk2 .col { flex:1; min-width:0; }
 .pl-wk2 .hd, .pl-wk2 .r { display:flex; align-items:center; gap:6px; }
@@ -1592,16 +1594,30 @@ async function openPlayer(key) {
     return { rec, st };
   };
   const stHead = po || (d.race && d.race.finalWeeks >= RS) ? 'PLAYOFFS' : 'ODDS';
-  html += `<div class="pl-own"><div class="hd"><span>TEAMS</span><span class="c-rec">REC</span><span class="c-st">${stHead}</span><span>PICK</span><span>COUNTED</span></div>`;
+  html += `<div class="pl-own"><div class="hd"><span>TEAMS</span><span class="c-rec">REC</span><span class="c-st">${stHead}</span><span>PICK</span><span class="c-dp">DRAFTED</span><span>COUNTED</span></div>`;
   owners.forEach(t => {
     const dr = d.drafts && d.drafts[t.leagueId];
     const pk = dr && dr.picks && dr.picks[t.rosterId] && dr.picks[t.rosterId][me.n];
     const nT = (dr && dr.teams) || 12;
     const lab = pk ? pk[1] + '.' + String(pk[0] - (pk[1] - 1) * nT).padStart(2, '0') : '';
+    // positional draft rank in that league's draft: "RB13" = 13th RB taken
+    let dpos = '';
+    if (pk && dr && dr.picks) {
+      const posOf = {};   // rosterId -> { name: position } from the rosters
+      d.teams.filter(x => x.leagueId === t.leagueId).forEach(x => {
+        const m = posOf[x.rosterId] = {};
+        (x.rosters || []).forEach(r => (r || []).forEach(q => { if (!m[q.n]) m[q.n] = q.p; }));
+      });
+      let before = 0;
+      Object.entries(dr.picks).forEach(([rid, byName]) => Object.entries(byName).forEach(([nm, v]) => {
+        if ((posOf[rid] || {})[nm] === me.p && v[0] < pk[0]) before++;
+      }));
+      dpos = me.p + (before + 1);
+    }
     let used = 0; for (let w = 0; w < final; w++) { const q = find(t.rosters[w]); if (q && q.s) used++; }
     html += `<div class="row"><span class="nm"><span class="tn pl-link" onclick="_nav(()=>openTeam('${t.leagueId}',${t.rosterId}))">${t.name}</span><span class="league-badge ${CONFIG.leagueColors[t.leagueIdx] || 'league-0'}">L${t.leagueIdx + 1}</span></span>`;
     const so = status(t);
-    html += `<span class="rc">${so.rec}</span><span class="sx">${so.st}</span><span class="pk">${lab}</span><span class="ct">${used} of ${final}</span></div>`;
+    html += `<span class="rc">${so.rec}</span><span class="sx">${so.st}</span><span class="pk">${lab}</span><span class="dp">${dpos}</span><span class="ct">${used} of ${final}</span></div>`;
   });
   html += `</div>`;
 
