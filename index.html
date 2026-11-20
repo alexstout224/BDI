@@ -138,6 +138,9 @@ section + section { border-top: none; }
   cursor: pointer; transition: all .15s; border-radius: 2px;
   font-family: inherit;
 }
+.sort-bar-right { margin-left: auto; flex-wrap: nowrap; flex-shrink: 0; }
+#standings .sec-head-row { flex-wrap: nowrap; }
+#standings .sec-head-row .sub { white-space: nowrap; }
 .sort-btn:hover { border-color: var(--concrete); color: var(--concrete); }
 .sort-btn.active { background: var(--gold); color: var(--ground); border-color: var(--gold); }
 
@@ -681,10 +684,10 @@ footer {
   </div>
   <div class="sec-head-row">
     <div class="sub" id="standings-sub"></div>
-    <div id="standings-controls" class="sort-bar" style="display:none">
-      <button class="sort-btn active" data-sort="cumulative">POINTS</button>
-      <button class="sort-btn" data-sort="record">RECORD</button>
-      <button class="sort-btn" data-sort="allplay">ALL-PLAY</button>
+    <div id="standings-controls" class="sort-bar sort-bar-right" style="display:none">
+      <button class="sort-btn active" data-sort="cumulative">PTS</button>
+      <button class="sort-btn" data-sort="record">W/L</button>
+      <button class="sort-btn" data-sort="allplay">AP</button>
     </div>
   </div>
 </div>
