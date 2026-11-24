@@ -897,7 +897,10 @@ function renderStandings(data) {
   // (totals, W/L and week columns), since playoff weeks don't count toward them.
   const RS = CONFIG.regularSeasonWeeks;
   const frozen = (data.currentWeek || 0) > RS;
-  const allTeams = !frozen ? [...data.teams] : data.teams.map(t => {
+  // W/L comes from the site's own results (the playoff race's records), not
+  // Sleeper's, which Sleeper only updates overnight after the week ends.
+  const ownRecord = t => (t.race && t.race.w != null) ? { wins: t.race.w, losses: t.race.l } : t.record;
+  const allTeams = !frozen ? data.teams.map(t => ({ ...t, record: ownRecord(t) })) : data.teams.map(t => {
     const scores = t.scores.slice(0, RS);
     let wins = 0, losses = 0;
     if (t.race && t.race.w != null) { wins = t.race.w; losses = t.race.l; }
